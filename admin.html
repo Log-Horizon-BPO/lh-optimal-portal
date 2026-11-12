@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LH Optimal BPO — Admin</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --sans:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --bg:#eef1f4; --surface:#fff; --surface-2:#f5f7f9; --fg:#1b2430; --muted:#5c6775; --faint:#8793a1;
+  --line:#dce2e9; --line-soft:#e7ecf1; --accent:#1f66c2; --accent-fg:#fff;
+  --good:#1f8a54; --good-s:#e2f2e9; --warn:#b2730a; --warn-s:#f7ecd8; --crit:#c23b3b; --crit-s:#f6e2e2;
+  --neutral:#596577; --neutral-s:#e9ebef; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1118; --surface:#121923; --surface-2:#0f151d; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
+  --line:#222b37; --line-soft:#1b232e; --accent:#4f93e6; --accent-fg:#071630;
+  --good:#4ac585; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717;
+  --neutral:#9aa4b2; --neutral-s:#1d242d; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0c1118; --surface:#121923; --surface-2:#0f151d; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
+  --line:#222b37; --line-soft:#1b232e; --accent:#4f93e6; --accent-fg:#071630;
+  --good:#4ac585; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717;
+  --neutral:#9aa4b2; --neutral-s:#1d242d; color-scheme:dark;
+}
+*{box-sizing:border-box} html,body{margin:0;min-height:100%} [hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px}
+.mono{font-family:var(--mono)} button,input,select{font:inherit}
+.ashell{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--line);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:14px 12px;gap:14px}
+.side-brand{display:flex;align-items:center;gap:10px;padding:4px 6px}
+.logo{width:34px;height:34px;flex:0 0 auto;display:block}
+.side-brand b{font-weight:700;line-height:1.1} .side-brand small{display:block;color:var(--muted);font-size:.7rem}
+.side-nav{display:flex;flex-direction:column;gap:3px}
+.side-nav button,.side-nav a{display:flex;align-items:center;gap:10px;border:0;background:transparent;color:var(--muted);font-weight:600;font-size:.88rem;padding:9px 11px;border-radius:8px;cursor:pointer;text-align:left;text-decoration:none;width:100%}
+.side-nav button:hover,.side-nav a:hover{background:var(--surface-2);color:var(--fg)}
+.side-nav button[aria-current="true"]{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.badge{margin-left:auto;font-family:var(--mono);font-size:.62rem;background:var(--crit);color:#fff;padding:0 6px;border-radius:999px}
+.side-foot{margin-top:auto}
+.side-user{display:flex;align-items:center;gap:8px;font-size:.8rem;padding:8px 6px;border-top:1px solid var(--line-soft)}
+.side-user .ava{width:30px;height:30px;border-radius:50%;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);display:grid;place-items:center;font-size:.64rem;font-weight:600;background-size:cover;background-position:center;overflow:hidden}
+.theme-sw{display:flex;gap:4px;padding:6px;margin-bottom:6px;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:9px}
+.theme-sw button{flex:1;border:0;background:transparent;color:var(--muted);border-radius:6px;padding:5px 0;font-size:.9rem;cursor:pointer;line-height:1}
+.theme-sw button:hover{background:var(--surface);color:var(--fg)}
+.theme-sw button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.avatar-edit{display:flex;align-items:center;gap:14px}
+.avatar-edit .ava-lg{width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);display:grid;place-items:center;font-size:1.1rem;font-weight:700;background-size:cover;background-position:center;overflow:hidden;flex:0 0 auto}
+.side-user .lo{margin-left:auto;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);border-radius:6px;padding:3px 8px;font-size:.74rem;cursor:pointer}
+.content{min-width:0;padding:24px clamp(20px,4vw,56px) 72px;width:100%;max-width:1400px;margin:0 auto}
+h1{font-size:1.15rem;margin:0}
+.head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.spacer{flex:1 1 auto}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:14px}
+.card-pad{padding:16px}
+.card-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line-soft)}
+.set-h{font-size:.66rem;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);margin:0 0 8px;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:.72rem;color:var(--muted);font-weight:600}
+.field input,.field select{border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:8px;padding:8px 10px;font-size:.84rem}
+.field .ro{padding:8px 10px;color:var(--muted);font-family:var(--mono);font-size:.8rem}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--fg);font-weight:600;font-size:.82rem;padding:7px 13px;border-radius:8px;cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:transparent}
+.btn.sm{padding:4px 9px;font-size:.74rem} .btn.danger{color:var(--crit);border-color:color-mix(in srgb,var(--crit) 40%,transparent)}
+.row{display:grid;grid-template-columns:1.4fr .9fr .7fr .8fr auto;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line-soft)}
+.row:last-child{border-bottom:0} .row.head2{font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:600}
+.nm{font-weight:600} .sub{font-family:var(--mono);font-size:.68rem;color:var(--faint)}
+.pill{font-size:.68rem;font-weight:600;padding:2px 9px;border-radius:999px;display:inline-block}
+.ok{color:var(--good);background:var(--good-s)} .off{color:var(--neutral);background:var(--neutral-s)} .pend{color:var(--warn);background:var(--warn-s)}
+.acts{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.role-sel{border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:6px;padding:4px 6px;font-size:.76rem}
+.recips{display:flex;flex-direction:column;gap:1px;border:1px solid var(--line-soft);border-radius:8px;padding:6px;background:var(--surface-2);max-height:240px;overflow:auto}
+.recips label{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:.84rem}
+.recips .rl{margin-left:auto;font-family:var(--mono);font-size:.68rem;color:var(--faint)}
+.hint{color:var(--muted);font-size:.74rem}
+.rpt{width:100%;border-collapse:collapse;font-size:.82rem}
+.rpt th,.rpt td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line-soft);white-space:nowrap;vertical-align:top}
+.rpt th{font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:600}
+.rpt td.num{font-family:var(--mono)} .rpt tr:last-child td{border-bottom:0}
+.rpt .who{font-weight:600} .rpt .sub2{font-family:var(--mono);font-size:.68rem;color:var(--faint)}
+.dispo-tags{display:flex;gap:4px;flex-wrap:wrap;white-space:normal;max-width:340px}
+.dispo-tags span{font-family:var(--mono);font-size:.68rem;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:5px;padding:1px 6px}
+.rp-controls{display:flex;align-items:center;gap:10px}
+.rp-controls input[type=date]{border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:8px;padding:7px 10px;font:inherit}
+.sup-wrap{display:grid;grid-template-columns:300px 1fr;gap:14px;align-items:start}
+.sup-item{display:flex;gap:10px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line-soft);cursor:pointer;width:100%;background:transparent;border-left:0;border-right:0;border-top:0;color:var(--fg);text-align:left}
+.sup-item:hover{background:var(--surface-2)} .sup-item[aria-current="true"]{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.sup-item .ava{width:30px;height:30px;border-radius:50%;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);display:grid;place-items:center;font-family:var(--mono);font-size:.68rem;font-weight:600}
+.sup-item .mid{min-width:0;flex:1 1 auto} .sup-item .snip{color:var(--muted);font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sup-item .dot{width:8px;height:8px;border-radius:50%;background:var(--crit)}
+.chatbox{display:flex;flex-direction:column;min-height:360px}
+.msgs{flex:1 1 auto;padding:14px 16px;display:flex;flex-direction:column;gap:9px;overflow:auto;max-height:440px}
+.msg{max-width:78%;padding:8px 12px;border-radius:12px;font-size:.86rem;line-height:1.4}
+.msg.agent{align-self:flex-start;background:var(--surface-2);border:1px solid var(--line-soft);border-bottom-left-radius:4px}
+.msg.admin{align-self:flex-end;background:var(--accent);color:var(--accent-fg);border-bottom-right-radius:4px}
+.msg .meta{font-size:.62rem;opacity:.7;margin-top:3px}
+.chat-input{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line-soft)}
+.chat-input input{flex:1 1 auto;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:8px;padding:9px 11px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);background:var(--fg);color:var(--bg);font-size:.84rem;font-weight:600;padding:9px 15px;border-radius:9px;opacity:0;pointer-events:none;transition:.2s;z-index:60}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#auth{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;padding:16px}
+.auth-card{width:330px;max-width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:9px;box-shadow:0 8px 30px rgba(20,40,70,.12)}
+.auth-card h2{margin:2px 0;font-size:1.05rem} .auth-card label{font-size:.78rem;color:var(--muted);margin-top:4px}
+.auth-card input{border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:8px;padding:9px 11px}
+.auth-card button{background:var(--accent);color:var(--accent-fg);border:0;border-radius:8px;padding:10px;font-weight:700;cursor:pointer;margin-top:8px}
+.auth-err{background:var(--crit-s);color:var(--crit);border:1px solid color-mix(in srgb,var(--crit) 35%,transparent);border-radius:8px;padding:8px 10px;font-size:.82rem}
+.setup{background:var(--warn-s);color:var(--warn);border-radius:8px;padding:10px;font-size:.78rem;line-height:1.4}
+@media (max-width:760px){ .ashell{grid-template-columns:1fr} .sidebar{position:static;height:auto;flex-direction:row;overflow-x:auto} .side-nav{flex-direction:row} .side-foot,.side-user{display:none} .sup-wrap{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div id="auth">
+  <form class="auth-card" id="login-form">
+    <div style="display:flex;align-items:center;gap:10px"><img class="logo" src="logo.svg" alt="LH Optimal BPO"><div><b>LH Optimal BPO</b><div class="hint">Admin portal</div></div></div>
+    <h2>Sign in</h2>
+    <div class="setup" id="setup-note" hidden>Set your Supabase URL and anon key in <b>lib/supabase-config.js</b> first.</div>
+    <div class="auth-err" id="auth-err" hidden></div>
+    <label for="lg-email">Email</label><input id="lg-email" type="email" autocomplete="username" required>
+    <label for="lg-pass">Password</label><input id="lg-pass" type="password" autocomplete="current-password" required>
+    <button type="submit">Sign in</button>
+  </form>
+</div>
+
+<div class="ashell">
+  <nav class="sidebar">
+    <div class="side-brand"><img class="logo" src="logo.svg" alt="LH Optimal BPO"><div><b>LH Optimal BPO</b><small>Admin portal</small></div></div>
+    <div class="side-nav">
+      <button data-v="campaigns" aria-current="true">Campaigns</button>
+      <button data-v="agents">Agents</button>
+      <button data-v="reports">Reports</button>
+      <button data-v="support">Support <span id="sup-badge" class="badge" hidden>0</span></button>
+      <button data-v="settings">Settings</button>
+      <a href="wallboard.html">Wallboard ↗</a>
+    </div>
+    <div class="side-foot">
+      <div class="theme-sw" id="theme-sw" role="group" aria-label="Theme">
+        <button type="button" data-t="light" title="Light">☀</button>
+        <button type="button" data-t="dark" title="Dark">☾</button>
+        <button type="button" data-t="system" title="System">◐</button>
+      </div>
+      <div class="side-user"><span class="ava" id="su-ava"></span><div style="min-width:0"><div id="su-name" style="font-weight:600"></div><div id="su-role" style="color:var(--muted);font-size:.68rem"></div></div><button class="lo" id="signout">Sign out</button></div>
+    </div>
+  </nav>
+  <main class="content">
+    <section id="view-campaigns"><div class="head"><h1>Campaigns</h1><div class="spacer"></div><button class="btn primary" id="add-camp">+ Add campaign</button></div><div id="camps"></div></section>
+
+    <section id="view-agents" hidden>
+      <div class="head"><h1>Agents</h1></div>
+      <div class="card"><div class="card-head">Add agent</div><div class="card-pad grid">
+        <div class="field"><label>Name</label><input id="na-name"></div>
+        <div class="field"><label>Campaign</label><select id="na-camp"></select></div>
+        <div class="field"><label>Role</label><select id="na-role"></select></div>
+        <div class="field"><label>Usual pace /hr</label><input id="na-rate" type="number" step="0.1" value="2.0"></div>
+        <div class="field"><label>User email (login)</label><input id="na-email" type="email" autocomplete="off" placeholder="agent@…"></div>
+        <div class="field"><label>One-time password <span class="hint" style="font-weight:400">(agent changes on 1st login)</span></label><div style="display:flex;gap:6px"><input id="na-otp" autocomplete="off"><button type="button" class="btn sm" id="na-gen" title="Generate">⟳</button></div></div>
+        <div class="field"><label>Dialer login</label><input id="na-duser" autocomplete="off"></div>
+        <div class="field"><label>Dialer password</label><input id="na-dpass" type="password" autocomplete="new-password"></div>
+        <div class="field" style="justify-content:flex-end"><button class="btn primary" id="add-agent">Create agent</button></div>
+      </div></div>
+      <div class="card"><div class="row head2"><span>Agent</span><span>Campaign</span><span>Status</span><span>Role</span><span></span></div><div id="agents"></div></div>
+    </section>
+
+    <section id="view-reports" hidden>
+      <div class="head"><h1>Reports</h1><div class="spacer"></div>
+        <div class="rp-controls"><label class="hint">Date</label><input id="rp-date" type="date"><button class="btn" id="rp-refresh">Refresh</button></div>
+      </div>
+      <div class="hint" style="margin:-6px 0 12px">Dialing &amp; break time and paid transfers for the selected day. Paid hours are attributed to the <b>dialer user</b> (the dialing seat), not the system login.</div>
+      <div class="card"><div class="card-head"><b>By agent (system user)</b></div><div style="overflow-x:auto"><table class="rpt" id="rp-agents"></table></div></div>
+      <div class="card"><div class="card-head"><b>By dialer user</b></div><div style="overflow-x:auto"><table class="rpt" id="rp-dialers"></table></div></div>
+    </section>
+
+    <section id="view-support" hidden>
+      <div class="head"><h1>Support</h1></div>
+      <div class="card"><div class="sup-wrap">
+        <div id="sup-list"></div>
+        <div class="chatbox"><div class="card-head" id="sup-head">Select a conversation</div><div class="msgs" id="sup-msgs"></div>
+          <div class="chat-input"><input id="sup-reply" placeholder="Type a reply…" disabled><button class="btn primary" id="sup-send" disabled>Send</button></div></div>
+      </div></div>
+    </section>
+
+    <section id="view-settings" hidden>
+      <div class="head"><h1>Settings</h1><div class="spacer"></div><button class="btn primary" id="set-save">Save settings</button></div>
+      <div class="card card-pad"><h3 class="set-h">My profile</h3>
+        <div class="avatar-edit">
+          <span class="ava-lg" id="pf-ava"></span>
+          <div style="flex:1 1 auto;min-width:0">
+            <div class="field" style="margin-bottom:8px;max-width:280px"><label>Display name</label><input id="pf-name"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="pf-pick">Change avatar…</button><button class="btn" id="pf-clear">Remove</button><button class="btn primary" id="pf-save">Save profile</button></div>
+            <input type="file" id="pf-file" accept="image/*" hidden>
+            <div class="hint" style="margin-top:6px">A square image works best — it's resized and stored small.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-pad"><h3 class="set-h">Monitoring &amp; alerts — applied live</h3>
+        <div class="grid">
+          <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="al-idle"> Idle while Ready</label>
+          <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="al-break_overrun"> Break overrun</label>
+          <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="al-zero_transfers"> Zero transfers</label>
+          <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="al-pace"> Behind pace</label>
+          <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="al-tracker_error"> Tracker error</label>
+          <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="al-clock_skew"> Clock skew</label>
+        </div>
+        <div class="grid" style="margin-top:12px">
+          <div class="field"><label>Idle alert (min)</label><input id="s-idleMin" type="number"></div>
+          <div class="field"><label>Zero-transfer window (min)</label><input id="s-zeroMin" type="number"></div>
+          <div class="field"><label>Heartbeat timeout (sec)</label><input id="s-hbSec" type="number"></div>
+          <div class="field"><label>Clock-skew (min)</label><input id="s-skewMin" type="number"></div>
+        </div>
+      </div>
+      <div class="card card-pad"><h3 class="set-h">Security</h3>
+        <div class="grid"><div class="field"><label>Dialer URL/credentials visible to</label><select id="s-creds"><option value="admins">All admins</option><option value="super">Super-admin only</option></select></div></div>
+      </div>
+      <div class="card card-pad"><h3 class="set-h">Support recipients — only Supervisor / Admin / Co-admin</h3>
+        <div class="recips" id="recips"></div><div style="margin-top:12px"><button class="btn primary" id="save-recips">Save recipients</button></div>
+      </div>
+      <div class="card card-pad" id="users-card" hidden><h3 class="set-h">Admin users — super-admin only</h3>
+        <div class="grid" style="margin-bottom:12px">
+          <div class="field"><label>Name</label><input id="nu-name"></div>
+          <div class="field"><label>Email</label><input id="nu-email" type="email"></div>
+          <div class="field"><label>Role</label><select id="nu-role"><option value="super-admin">Super-admin</option><option value="admin" selected>Admin</option><option value="supervisor">Supervisor</option></select></div>
+          <div class="field"><label>Password</label><input id="nu-pass" type="password"></div>
+          <div class="field" style="justify-content:flex-end"><button class="btn primary" id="add-user">Create user</button></div>
+        </div>
+        <div id="users-list"></div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './lib/supabase-config.js';
+import { summarizeActivity, settleShift } from './lib/core/billing.mjs';
+const $ = (id)=>document.getElementById(id);
+$('setup-note').hidden = !SUPABASE_URL.includes('YOUR-PROJECT-REF');
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const esc = (s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const initials = (n)=>(n||'').split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+let toastT; function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+const ROLES=['Agent','Supervisor','Admin','Co-admin'];
+let ME=null, campaigns=[], agents=[], settings={}, supCurrent=null;
+
+/* ---- theme switcher (light / dark / system), persisted per device ---- */
+function applyTheme(t){
+  if(t==='system'){ document.documentElement.removeAttribute('data-theme'); }
+  else { document.documentElement.setAttribute('data-theme', t); }
+  document.querySelectorAll('#theme-sw button').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.t===t)));
+}
+function initTheme(){
+  let t='system'; try{ t=localStorage.getItem('lh-theme')||'system'; }catch(e){}
+  applyTheme(t);
+  document.querySelectorAll('#theme-sw button').forEach(b=>b.addEventListener('click',()=>{
+    try{ localStorage.setItem('lh-theme', b.dataset.t); }catch(e){} applyTheme(b.dataset.t);
+  }));
+}
+initTheme();
+
+/* ---- avatar: show an image if set, else coloured initials ---- */
+function setAva(el, name, avatar){
+  if(!el) return;
+  if(avatar){ el.style.backgroundImage=`url("${avatar}")`; el.textContent=''; }
+  else { el.style.backgroundImage=''; el.textContent=initials(name); }
+}
+// resize an uploaded image to a small square data URL (keeps DB rows tiny)
+function fileToAvatar(file){
+  return new Promise((res,rej)=>{
+    const img=new Image(); const rd=new FileReader();
+    rd.onload=()=>{ img.onload=()=>{ const S=128, c=document.createElement('canvas'); c.width=c.height=S;
+      const ctx=c.getContext('2d'); const m=Math.min(img.width,img.height), sx=(img.width-m)/2, sy=(img.height-m)/2;
+      ctx.drawImage(img,sx,sy,m,m,0,0,S,S); res(c.toDataURL('image/jpeg',0.82)); };
+      img.onerror=rej; img.src=rd.result; };
+    rd.onerror=rej; rd.readAsDataURL(file);
+  });
+}
+
+/* ---- auth ---- */
+$('login-form').addEventListener('submit', async (e)=>{ e.preventDefault(); $('auth-err').hidden=true;
+  const { error } = await sb.auth.signInWithPassword({ email:$('lg-email').value, password:$('lg-pass').value });
+  if(error){ $('auth-err').textContent=error.message; $('auth-err').hidden=false; } else init();
+});
+$('signout').addEventListener('click', async ()=>{ await sb.auth.signOut(); location.reload(); });
+
+async function init(){
+  const { data:{ user } } = await sb.auth.getUser();
+  if(!user) return;
+  const { data:prof } = await sb.from('admin_profiles').select('name,role,avatar').eq('id',user.id).maybeSingle();
+  ME={ id:user.id, name:prof?.name??user.email, role:prof?.role??'admin', avatar:prof?.avatar??null, email:user.email };
+  $('auth').hidden=true;
+  setAva($('su-ava'), ME.name, ME.avatar); $('su-name').textContent=ME.name; $('su-role').textContent=ME.role;
+  await loadAll();
+  sb.channel('support-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'support_messages'}, ()=>loadSupport()).subscribe();
+}
+
+async function loadAll(){
+  const [{data:c},{data:a},{data:s}] = await Promise.all([
+    sb.from('campaigns_safe').select('*'),
+    sb.from('agents').select('*'),
+    sb.from('app_settings').select('settings').eq('id',1).maybeSingle(),
+  ]);
+  campaigns=c||[]; agents=a||[]; settings=s?.settings??{};
+  renderCampaigns(); renderAgents(); fillAgentForm(); loadSupport();
+  if(!$('view-settings').hidden) loadSettings();
+}
+
+/* ---- campaigns ---- */
+function renderCampaigns(){
+  $('camps').innerHTML = campaigns.map(c=>{
+    const roster = agents.filter(a=>a.campaign===c.id);
+    const sources = Array.isArray(c.sources) ? c.sources.join('\n') : '';
+    const hidden = c.dialer_hidden;
+    const dialer = hidden
+      ? '<div class="field"><label>Dialer URL</label><div class="ro">Hidden — super-admin only</div></div>'
+      : `<div class="field"><label>Dialer URL</label><input data-f="dialer_url" value="${esc(c.dialer_url||'')}"></div>`;
+    const srcBlock = hidden
+      ? '<div class="field" style="grid-column:1/-1"><label>Sources / scripts (hidden from agents)</label><div class="ro">Hidden — super-admin only</div></div>'
+      : `<div class="field" style="grid-column:1/-1"><label>Sources / scripts — one URL per line (hidden from agents)</label><textarea data-f="sources" rows="3" style="border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:8px;padding:8px 10px;font-size:.84rem;font-family:var(--mono)">${esc(sources)}</textarea></div>`;
+    const rosterBlock = `<div class="field" style="grid-column:1/-1"><label>Assigned agents (${roster.length})</label>`+
+      (roster.length
+        ? `<div class="recips" style="max-height:150px">${roster.map(a=>`<label style="cursor:default"><span>${esc(a.name)}</span><span class="rl">${a.id} · ${esc(a.role)} · ${esc(a.status)}</span><button class="btn sm unassign" data-ag="${a.id}" style="margin-left:8px">Unassign</button></label>`).join('')}</div>`
+        : `<div class="hint" style="padding:8px">None yet — add agents in the Agents tab and set their campaign to this one.</div>`)+`</div>`;
+    return `<div class="card" data-id="${c.id}"><div class="card-head"><b>${esc(c.name)}</b><span class="pill ${c.status==='Paused'?'pend':'ok'}">${esc(c.status||'Active')}</span><div class="spacer"></div><span class="hint">${c.id}</span></div>
+      <div class="card-pad"><div class="grid">
+        <div class="field"><label>Name</label><input data-f="name" value="${esc(c.name)}"></div>
+        <div class="field"><label>Status</label><select data-f="status"><option ${c.status!=='Paused'?'selected':''}>Active</option><option ${c.status==='Paused'?'selected':''}>Paused</option></select></div>
+        <div class="field"><label>Target /hr</label><input data-f="hourly_target" type="number" value="${c.hourly_target}"></div>
+        <div class="field"><label>Break allowance (min)</label><input data-f="break_allowance_min" type="number" value="${c.break_allowance_min}"></div>
+        <div class="field"><label>Idle grace (min)</label><input data-f="idle_grace_min" type="number" value="${Math.round((c.idle_grace_ms||180000)/60000)}"></div>
+        <div class="field"><label>Working hours — start</label><input data-f="work_start" type="time" value="${esc(c.work_start||'')}"></div>
+        <div class="field"><label>Working hours — end</label><input data-f="work_end" type="time" value="${esc(c.work_end||'')}"></div>
+        ${dialer}
+        ${srcBlock}
+        ${rosterBlock}
+      </div><div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary save-c">Save campaign</button><div class="spacer"></div><button class="btn danger del-c">Delete</button></div></div></div>`;
+  }).join('') || '<div class="hint" style="padding:12px">No campaigns yet — click <b>+ Add campaign</b> to create one.</div>';
+  document.querySelectorAll('.save-c').forEach(b=>b.addEventListener('click',onSaveCamp));
+  document.querySelectorAll('.del-c').forEach(b=>b.addEventListener('click',onDelCamp));
+  document.querySelectorAll('.unassign').forEach(b=>b.addEventListener('click',async e=>{
+    const ag=e.target.dataset.ag; if(!confirm('Unassign '+ag+' from this campaign?')) return;
+    const { error } = await sb.from('agents').update({campaign:null}).eq('id',ag); toast(error?error.message:'Unassigned'); loadAll();
+  }));
+}
+async function onSaveCamp(e){
+  const card=e.target.closest('[data-id]'), id=card.dataset.id, q=f=>card.querySelector(`[data-f="${f}"]`);
+  const patch={ name:q('name').value, status:q('status').value, hourly_target:+q('hourly_target').value,
+    break_allowance_min:+q('break_allowance_min').value, idle_grace_ms:+q('idle_grace_min').value*60000,
+    work_start:q('work_start').value||null, work_end:q('work_end').value||null };
+  const du=q('dialer_url'); if(du) patch.dialer_url=du.value;
+  const src=q('sources'); if(src) patch.sources=src.value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const { error } = await sb.from('campaigns').update(patch).eq('id',id);
+  toast(error?error.message:'Saved'); if(!error) loadAll();
+}
+async function onDelCamp(e){
+  const id=e.target.closest('[data-id]').dataset.id; if(!confirm('Delete this campaign?')) return;
+  const { error } = await sb.from('campaigns').delete().eq('id',id); toast(error?error.message:'Deleted'); loadAll();
+}
+$('add-camp').addEventListener('click', async ()=>{
+  const name=prompt('Campaign name:'); if(!name) return;
+  const ref = campaigns[0] || {};
+  const { error } = await sb.from('campaigns').insert({ id:'camp-'+Date.now().toString(36), name, shift_start:ref.shift_start, shift_end:ref.shift_end });
+  toast(error?error.message:'Created'); loadAll();
+});
+
+/* ---- agents ---- */
+function fillAgentForm(){
+  $('na-camp').innerHTML = campaigns.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  $('na-role').innerHTML = ROLES.map(r=>`<option>${r}</option>`).join('');
+}
+let agentOpen=null;
+function renderAgents(){
+  const campOpts=(sel)=>`<option value="" ${!sel?'selected':''}>— none —</option>`+campaigns.map(c=>`<option value="${c.id}" ${c.id===sel?'selected':''}>${esc(c.name)}</option>`).join('');
+  $('agents').innerHTML = agents.map(a=>{
+    const camp=(campaigns.find(c=>c.id===a.campaign)||{}).name||a.campaign||'—';
+    const paused=a.status==='Paused', disabled=a.status==='Disabled';
+    const roleOpts=ROLES.map(r=>`<option ${r===a.role?'selected':''}>${r}</option>`).join('');
+    const open=agentOpen===a.id;
+    const editor = open ? `<div class="card-pad" data-ed="${a.id}" style="border-top:1px solid var(--line-soft);background:var(--surface-2)">
+      <div class="grid">
+        <div class="field"><label>Name</label><input data-e="name" value="${esc(a.name)}"></div>
+        <div class="field"><label>Agent ID</label><div class="ro">${a.id}</div></div>
+        <div class="field"><label>Campaign</label><select data-e="campaign">${campOpts(a.campaign)}</select></div>
+        <div class="field"><label>Role</label><select data-e="role">${roleOpts}</select></div>
+        <div class="field"><label>Status</label><select data-e="status"><option ${a.status==='Active'?'selected':''}>Active</option><option ${a.status==='Paused'?'selected':''}>Paused</option><option ${a.status==='Disabled'?'selected':''}>Disabled</option></select></div>
+        <div class="field"><label>Usual pace /hr</label><input data-e="usual_rate" type="number" step="0.1" value="${a.usual_rate??2}"></div>
+        <div class="field"><label>Dialer login</label><input data-e="dialer_user" autocomplete="off" value="${esc(a.dialer_user||'')}"></div>
+        <div class="field"><label>Dialer password</label><input data-e="dialer_pass" type="password" autocomplete="new-password" placeholder="${a.dialer_pass?'•••••• (set — type to change)':'not set'}"></div>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label>Portal login ${a.auth_uid?'<span class="pill ok">active</span>':'<span class="pill off">none</span>'}</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input data-e="login_email" type="email" value="${esc(a.login_email||'')}" placeholder="agent@…" ${a.auth_uid?'readonly':''} style="flex:1 1 220px">
+          ${a.auth_uid
+            ? '<button type="button" class="btn sm reset-login">Reset one-time password</button>'
+            : '<button type="button" class="btn sm primary create-login">Create login</button>'}
+        </div>
+        <div class="hint">${a.auth_uid?'Reset issues a new one-time password the agent must change on next login.':'Enter an email, then Create login to issue a one-time password.'}</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary save-e">Save changes</button><button class="btn close-e">Close</button><div class="spacer"></div><button class="btn danger del-a">Delete agent</button></div>
+    </div>` : '';
+    return `<div class="row" data-id="${a.id}"><span><div class="nm">${esc(a.name)}</div><div class="sub">${a.id}${a.dialer_user?' · dialer:'+esc(a.dialer_user):' · no dialer login'}</div></span>
+      <span>${esc(camp)}</span><span><span class="pill ${a.status==='Active'?'ok':a.status==='Paused'?'pend':'off'}">${esc(a.status)}</span></span>
+      <span><select class="role-sel">${roleOpts}</select></span>
+      <span class="acts"><button class="btn sm details">${open?'Hide':'Details'}</button>
+      <button class="btn sm act" data-a="${paused?'resume':'pause'}">${paused?'Resume':'Pause'}</button>
+      <button class="btn sm act" data-a="${disabled?'enable':'disable'}">${disabled?'Enable':'Disable'}</button></span></div>${editor}`;
+  }).join('') || '<div class="hint" style="padding:12px">No agents yet — fill the form above and click <b>Create agent</b>.</div>';
+  document.querySelectorAll('.details').forEach(b=>b.addEventListener('click',e=>{
+    const id=e.target.closest('[data-id]').dataset.id; agentOpen=agentOpen===id?null:id; renderAgents();
+  }));
+  document.querySelectorAll('.close-e').forEach(b=>b.addEventListener('click',()=>{ agentOpen=null; renderAgents(); }));
+  document.querySelectorAll('.save-e').forEach(b=>b.addEventListener('click',onSaveAgent));
+  document.querySelectorAll('.create-login').forEach(b=>b.addEventListener('click',async e=>{
+    const box=e.target.closest('[data-ed]'), id=box.dataset.ed, email=box.querySelector('[data-e="login_email"]').value.trim();
+    const name=box.querySelector('[data-e="name"]').value.trim();
+    if(!email){ toast('Enter the login email first'); return; }
+    const pw=genPass();
+    const r=await callFn('agent-users',{ action:'create', agentId:id, email, password:pw, name });
+    if(r?.error){ toast(r.error); return; }
+    alert('Login created for '+id+'\n\nEmail: '+email+'\nOne-time password: '+pw+'\n\nShare these with the agent. They must change the password on first login.');
+    agentOpen=null; loadAll();
+  }));
+  document.querySelectorAll('.reset-login').forEach(b=>b.addEventListener('click',async e=>{
+    const id=e.target.closest('[data-ed]').dataset.ed; if(!confirm('Issue a new one-time password for '+id+'?')) return;
+    const pw=genPass();
+    const r=await callFn('agent-users',{ action:'reset', agentId:id, password:pw });
+    if(r?.error){ toast(r.error); return; }
+    alert('New one-time password for '+id+':\n\n'+pw+'\n\nShare it with the agent. They must change it on next login.');
+  }));
+  document.querySelectorAll('.role-sel').forEach(s=>s.addEventListener('change',async e=>{
+    const id=e.target.closest('[data-id]').dataset.id; await sb.from('agents').update({role:e.target.value}).eq('id',id); toast('Role updated'); loadAll();
+  }));
+  document.querySelectorAll('.act').forEach(b=>b.addEventListener('click',async e=>{
+    const id=e.target.closest('[data-id]').dataset.id, map={pause:'Paused',resume:'Active',disable:'Disabled',enable:'Active'};
+    await sb.from('agents').update({status:map[e.target.dataset.a]}).eq('id',id); toast(id+' → '+map[e.target.dataset.a]); loadAll();
+  }));
+  document.querySelectorAll('.del-a').forEach(b=>b.addEventListener('click',async e=>{
+    const id=e.target.closest('[data-ed]')?.dataset.ed || e.target.closest('[data-id]').dataset.id;
+    if(!confirm('Delete agent '+id+'? This cannot be undone.')) return;
+    await callFn('agent-users',{ action:'delete', agentId:id });   // remove their login too (ignore if none)
+    await sb.from('agents').delete().eq('id',id); agentOpen=null; toast(id+' deleted'); loadAll();
+  }));
+}
+async function onSaveAgent(e){
+  const box=e.target.closest('[data-ed]'), id=box.dataset.ed, q=f=>box.querySelector(`[data-e="${f}"]`);
+  const patch={ name:q('name').value.trim(), campaign:q('campaign').value||null, role:q('role').value,
+    status:q('status').value, usual_rate:+q('usual_rate').value||2, dialer_user:q('dialer_user').value.trim()||null };
+  const dp=q('dialer_pass').value; if(dp) patch.dialer_pass=dp;   // only overwrite when typed
+  const { error } = await sb.from('agents').update(patch).eq('id',id);
+  toast(error?error.message:'Agent saved'); if(!error){ agentOpen=null; loadAll(); }
+}
+// generate a readable one-time password
+function genPass(){ const a='ABCDEFGHJKMNPQRSTUVWXYZ', b='23456789', s='abcdefghijkmnpqrstuvwxyz';
+  const pick=(set,n)=>Array.from({length:n},()=>set[Math.floor(Math.random()*set.length)]).join('');
+  return pick(a,2)+pick(s,3)+pick(b,3)+'!'; }
+// call an admin-gated Edge Function with the caller's session token
+async function callFn(name, body){
+  const { data:{ session } } = await sb.auth.getSession();
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
+    method:'POST', headers:{ 'content-type':'application/json', apikey:SUPABASE_ANON_KEY, authorization:`Bearer ${session?.access_token}` },
+    body: JSON.stringify(body) });
+  return res.json().catch(()=>({ error:'no response — is the '+name+' function deployed?' }));
+}
+$('na-gen').addEventListener('click', ()=>{ $('na-otp').value=genPass(); });
+$('add-agent').addEventListener('click', async ()=>{
+  const name=$('na-name').value.trim(); if(!name){toast('Enter a name');return;}
+  const email=$('na-email').value.trim(), otp=$('na-otp').value.trim();
+  if(!email||!otp){ toast('User email and one-time password are required'); return; }
+  const id='AG-'+Math.floor(Math.random()*900+100);
+  const row={ id, name, campaign:$('na-camp').value||null, role:$('na-role').value, usual_rate:+$('na-rate').value||2,
+    dialer_user:$('na-duser').value.trim()||null, login_email:email };
+  const dp=$('na-dpass').value; if(dp) row.dialer_pass=dp;
+  const { error } = await sb.from('agents').insert(row);
+  if(error){ toast(error.message); return; }
+  // provision the agent's login account (email + one-time password, must change on 1st login)
+  const r = await callFn('agent-users', { action:'create', agentId:id, email, password:otp, name });
+  if(r?.error){ toast('Agent saved, but login not created: '+r.error); }
+  else { toast('Created '+id+' + login '+email); }
+  ['na-name','na-email','na-otp','na-duser','na-dpass'].forEach(k=>$(k).value=''); loadAll();
+});
+
+/* ---- support ---- */
+async function loadSupport(){
+  const { data:msgs } = await sb.from('support_messages').select('*').order('created_at',{ascending:true}).limit(1000);
+  const byAgent={}; for(const m of (msgs||[])) (byAgent[m.agent_id] ??= []).push(m);
+  const rows = Object.entries(byAgent).map(([agentId,list])=>{
+    const last=list[list.length-1]; let lastAdmin=0; list.forEach(m=>{ if(m.sender==='admin') lastAdmin=Math.max(lastAdmin,+new Date(m.created_at)); });
+    const unread=list.filter(m=>m.sender==='agent' && +new Date(m.created_at)>lastAdmin).length;
+    return { agentId, last, unread, name:(agents.find(a=>a.id===agentId)||{}).name||agentId };
+  }).sort((a,b)=> +new Date(b.last.created_at) - +new Date(a.last.created_at));
+  const u=rows.reduce((s,r)=>s+r.unread,0); $('sup-badge').hidden=u===0; $('sup-badge').textContent=u;
+  $('sup-list').innerHTML = rows.length ? rows.map(r=>`<button class="sup-item" data-id="${r.agentId}" ${supCurrent===r.agentId?'aria-current="true"':''}>
+    <span class="ava">${initials(r.name)}</span><span class="mid"><div class="nm">${esc(r.name)}</div><div class="snip">${esc(r.last.body)}</div></span>${r.unread?'<span class="dot"></span>':''}</button>`).join('')
+    : '<div class="hint" style="padding:14px">No conversations.</div>';
+  document.querySelectorAll('.sup-item').forEach(b=>b.addEventListener('click',()=>openThread(b.dataset.id, byAgent[b.dataset.id])));
+  if(supCurrent && byAgent[supCurrent]) openThread(supCurrent, byAgent[supCurrent]);
+}
+function openThread(agentId, list){
+  supCurrent=agentId;
+  document.querySelectorAll('.sup-item').forEach(b=>b.setAttribute('aria-current',String(b.dataset.id===agentId)));
+  const name=(agents.find(a=>a.id===agentId)||{}).name||agentId;
+  $('sup-head').textContent=name+'  ·  '+agentId;
+  $('sup-msgs').innerHTML=(list||[]).map(m=>`<div class="msg ${m.sender}">${esc(m.body)}<div class="meta">${m.sender==='admin'?(m.user_name||'admin'):'agent'}</div></div>`).join('');
+  const box=$('sup-msgs'); box.scrollTop=box.scrollHeight;
+  $('sup-reply').disabled=false; $('sup-send').disabled=false;
+}
+async function sendReply(){
+  const text=$('sup-reply').value.trim(); if(!text||!supCurrent) return;
+  $('sup-reply').value='';
+  const { error } = await sb.from('support_messages').insert({ agent_id:supCurrent, sender:'admin', user_name:ME.name, body:text });
+  if(error) toast(error.message); else loadSupport();
+}
+$('sup-send').addEventListener('click',sendReply);
+$('sup-reply').addEventListener('keydown',e=>{if(e.key==='Enter')sendReply();});
+
+/* ---- settings ---- */
+const AL=['idle','break_overrun','zero_transfers','pace','tracker_error','clock_skew'];
+async function loadSettings(){
+  // my profile
+  pfAvatar = ME.avatar || null; setAva($('pf-ava'), ME.name, pfAvatar); $('pf-name').value = ME.name||'';
+  const s=settings; const a=s.alerts??{};
+  AL.forEach(k=>$('al-'+k).checked=a[k]!==false);
+  $('s-idleMin').value=a.idleMin??5; $('s-zeroMin').value=a.zeroMin??60; $('s-hbSec').value=a.hbSec??60; $('s-skewMin').value=a.skewMin??2;
+  $('s-creds').value=s.security?.dialerCredsVisibleTo??'admins';
+  // recipients
+  const { data:recs } = await sb.from('support_recipients').select('agent_id');
+  const set=new Set((recs||[]).map(r=>r.agent_id));
+  const elig=agents.filter(a=>['Supervisor','Admin','Co-admin'].includes(a.role));
+  $('recips').innerHTML = elig.length ? elig.map(a=>`<label><input type="checkbox" value="${a.id}" ${set.has(a.id)?'checked':''}><span>${esc(a.name)}</span><span class="rl">${a.id} · ${esc(a.role)}</span></label>`).join('')
+    : '<div class="hint" style="padding:10px">No eligible users. Set an agent’s role to Supervisor/Admin/Co-admin.</div>';
+  $('users-card').hidden = ME.role!=='super-admin'; if(ME.role==='super-admin') loadUsers();
+}
+/* ---- my profile (avatar + display name) ---- */
+let pfAvatar=null;
+$('pf-pick').addEventListener('click',()=>$('pf-file').click());
+$('pf-file').addEventListener('change', async (e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{ pfAvatar=await fileToAvatar(f); setAva($('pf-ava'), $('pf-name').value||ME.name, pfAvatar); toast('Preview ready — click Save profile'); }
+  catch(err){ toast('Could not read image'); }
+  e.target.value='';
+});
+$('pf-clear').addEventListener('click',()=>{ pfAvatar=null; setAva($('pf-ava'), $('pf-name').value||ME.name, null); });
+$('pf-save').addEventListener('click', async ()=>{
+  const name=$('pf-name').value.trim()||ME.name;
+  const { error } = await sb.from('admin_profiles').update({ name, avatar:pfAvatar }).eq('id',ME.id);
+  if(error){ toast(error.message); return; }
+  ME.name=name; ME.avatar=pfAvatar;
+  setAva($('su-ava'), ME.name, ME.avatar); $('su-name').textContent=ME.name;
+  toast('Profile saved');
+});
+$('set-save').addEventListener('click', async ()=>{
+  const alerts={ idleMin:+$('s-idleMin').value, zeroMin:+$('s-zeroMin').value, hbSec:+$('s-hbSec').value, skewMin:+$('s-skewMin').value };
+  AL.forEach(k=>alerts[k]=$('al-'+k).checked);
+  const next={ ...settings, alerts, security:{ ...(settings.security||{}), dialerCredsVisibleTo:$('s-creds').value } };
+  const { error } = await sb.from('app_settings').update({ settings:next }).eq('id',1);
+  toast(error?error.message:'Settings saved — alerts live'); if(!error){ settings=next; }
+});
+$('save-recips').addEventListener('click', async ()=>{
+  const chosen=[...document.querySelectorAll('#recips input:checked')].map(i=>i.value);
+  await sb.from('support_recipients').delete().not('agent_id','is',null);
+  if(chosen.length) await sb.from('support_recipients').insert(chosen.map(agent_id=>({agent_id})));
+  toast('Recipients saved');
+});
+
+/* ---- admin users (via Edge Function) ---- */
+async function fn(method, body){
+  const { data:{ session } } = await sb.auth.getSession();
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-users${method==='DELETE'?('?id='+encodeURIComponent(body)):''}`, {
+    method, headers:{ 'content-type':'application/json', apikey:SUPABASE_ANON_KEY, authorization:`Bearer ${session?.access_token}` },
+    body: method==='POST'?JSON.stringify(body):undefined,
+  });
+  return res.json().catch(()=>({}));
+}
+async function loadUsers(){
+  const users=await fn('GET');
+  $('users-list').innerHTML=(Array.isArray(users)?users:[]).map(u=>`<div class="row" data-id="${u.id}"><span><div class="nm">${esc(u.name)}</div></span><span>${esc(u.role)}</span><span></span><span></span><span class="acts"><button class="btn sm danger del-u">Delete</button></span></div>`).join('');
+  document.querySelectorAll('.del-u').forEach(b=>b.addEventListener('click',async e=>{
+    const id=e.target.closest('[data-id]').dataset.id; if(!confirm('Delete this admin user?')) return;
+    const r=await fn('DELETE',id); toast(r.ok?'Deleted':(r.error||'Failed')); loadUsers();
+  }));
+}
+$('add-user').addEventListener('click', async ()=>{
+  const body={ name:$('nu-name').value.trim(), email:$('nu-email').value.trim(), role:$('nu-role').value, password:$('nu-pass').value };
+  if(!body.email||!body.password){ toast('Email and password required'); return; }
+  const r=await fn('POST',body); if(r.error) toast(r.error); else { toast('User created'); $('nu-name').value='';$('nu-email').value='';$('nu-pass').value=''; loadUsers(); }
+});
+
+/* ---- reports ---- */
+function fmtDur(ms){ const m=Math.round((ms||0)/60000); const h=Math.floor(m/60); return (h?h+'h ':'')+(m%60)+'m'; }
+function dayWindow(dateStr){ const s=+new Date(dateStr+'T00:00:00'); return { windowStart:s, windowEnd:Math.min(Date.now(), s+86400000) }; }
+function targetFor(campaignId){ return (campaigns.find(c=>c.id===campaignId)||{}).hourly_target||0; }
+async function loadReports(){
+  const dateStr = $('rp-date').value || new Date().toISOString().slice(0,10);
+  $('rp-date').value = dateStr;
+  const { windowStart, windowEnd } = dayWindow(dateStr);
+  const { data:rows } = await sb.from('events').select('agent_id,type,server_ts,payload')
+    .gte('server_ts', windowStart).lt('server_ts', windowEnd).limit(100000);
+  const evAll = (rows||[]).map(r=>({ agentId:r.agent_id, type:r.type, serverTs:r.server_ts, payload:r.payload||{} }));
+  const opts = { windowStart, windowEnd, idleGraceMs:(settings.alerts?.idleMin??5)*60000 };
+
+  const byAgent={}, byDialer={};
+  for(const e of evAll){ (byAgent[e.agentId] ??= []).push(e);
+    const du=e.payload?.dialerUser; if(du) (byDialer[du] ??= []).push(e); }
+
+  // By agent
+  const aHead='<tr><th>Agent</th><th>Dialing</th><th>Pause</th><th>Calls</th><th>Paid transfers</th><th>Paid hrs</th><th>Dispositions</th></tr>';
+  const aBody=Object.keys(byAgent).sort().map(id=>{
+    const s=summarizeActivity(byAgent[id], opts); const a=agents.find(x=>x.id===id)||{}; const tgt=targetFor(a.campaign);
+    const paid=tgt>0?settleShift({hourlyTarget:tgt,confirmedTransfers:s.paidTransfers,billableHoursWorked:s.dialingHours}).paidHours:0;
+    const d=Object.entries(s.dispositions).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`<span>${esc(k)}: ${v}</span>`).join('')||'<span class="hint">—</span>';
+    return `<tr><td><div class="who">${esc(a.name||id)}</div><div class="sub2">${id}${a.dialer_user?' · dialer:'+esc(a.dialer_user):''}</div></td>`+
+      `<td class="num">${fmtDur(s.dialingMs)}</td><td class="num">${fmtDur(s.pauseMs)}</td><td class="num">${s.calls}</td>`+
+      `<td class="num">${s.paidTransfers}</td><td class="num">${tgt>0?paid:'—'}</td><td><div class="dispo-tags">${d}</div></td></tr>`;
+  }).join('')||'<tr><td colspan="7" class="hint" style="padding:14px">No activity for this day.</td></tr>';
+  $('rp-agents').innerHTML=aHead+aBody;
+
+  // By dialer user
+  const dHead='<tr><th>Dialer user</th><th>Dialing</th><th>Pause</th><th>Paid transfers</th><th>Paid hrs</th><th>Used by (today)</th></tr>';
+  const dBody=Object.keys(byDialer).sort().map(du=>{
+    const s=summarizeActivity(byDialer[du], opts);
+    const users=agents.filter(a=>a.dialer_user===du); const tgt=targetFor(users[0]?.campaign);
+    const paid=tgt>0?settleShift({hourlyTarget:tgt,confirmedTransfers:s.paidTransfers,billableHoursWorked:s.dialingHours}).paidHours:0;
+    const used=[...new Set(byDialer[du].map(e=>e.agentId))].map(id=>esc((agents.find(a=>a.id===id)||{}).name||id)).join(', ')||'—';
+    return `<tr><td class="who">${esc(du)}</td><td class="num">${fmtDur(s.dialingMs)}</td><td class="num">${fmtDur(s.pauseMs)}</td>`+
+      `<td class="num">${s.paidTransfers}</td><td class="num">${tgt>0?paid:'—'}</td><td>${used}</td></tr>`;
+  }).join('')||'<tr><td colspan="6" class="hint" style="padding:14px">No dialer activity for this day. (Agents tag events with their dialer user once they start working.)</td></tr>';
+  $('rp-dialers').innerHTML=dHead+dBody;
+}
+$('rp-date').value = new Date().toISOString().slice(0,10);
+$('rp-refresh').addEventListener('click', loadReports);
+$('rp-date').addEventListener('change', loadReports);
+
+/* ---- nav ---- */
+document.querySelectorAll('.side-nav button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.side-nav button').forEach(x=>x.setAttribute('aria-current',String(x===b)));
+  const v=b.dataset.v;
+  ['campaigns','agents','reports','support','settings'].forEach(k=>$('view-'+k).hidden = v!==k);
+  if(v==='settings') loadSettings();
+  if(v==='reports') loadReports();
+}));
+
+const { data:{ session } } = await sb.auth.getSession();
+if(session) init();
+</script>
+</body>
+</html>

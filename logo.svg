@@ -1,0 +1,11 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="LH Optimal BPO">
+  <path d="M50 4 L92 27 L92 73 L50 96 L8 73 L8 27 Z" fill="#ffffff" stroke="#1f66c2" stroke-width="5" stroke-linejoin="round"/>
+  <g fill="#1870b8" transform="translate(26,22)">
+    <rect x="18" y="0" width="30" height="12"/>
+    <rect x="36" y="0" width="12" height="41"/>
+    <rect x="18" y="0" width="12" height="24"/>
+    <rect x="0" y="44" width="30" height="12"/>
+    <rect x="0" y="15" width="12" height="41"/>
+    <rect x="18" y="32" width="12" height="24"/>
+  </g>
+</svg>

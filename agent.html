@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LH Optimal BPO — Agent</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --sans:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --bg:#eef1f4; --surface:#fff; --surface-2:#f5f7f9; --fg:#1b2430; --muted:#5c6775; --faint:#8793a1;
+  --line:#dce2e9; --line-soft:#e7ecf1; --accent:#1f66c2; --accent-fg:#fff;
+  --good:#1f8a54; --good-s:#e2f2e9; --warn:#b2730a; --warn-s:#f7ecd8; --crit:#c23b3b; --crit-s:#f6e2e2;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1118; --surface:#121923; --surface-2:#0f151d; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
+  --line:#222b37; --line-soft:#1b232e; --accent:#4f93e6; --accent-fg:#071630;
+  --good:#4ac585; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0c1118; --surface:#121923; --surface-2:#0f151d; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
+  --line:#222b37; --line-soft:#1b232e; --accent:#4f93e6; --accent-fg:#071630;
+  --good:#4ac585; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717; color-scheme:dark;
+}
+*{box-sizing:border-box} html,body{margin:0;min-height:100%} [hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px}
+.wrap{min-height:100vh;display:grid;place-items:center;padding:16px}
+.card{width:360px;max-width:100%;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px;box-shadow:0 8px 30px rgba(20,40,70,.10)}
+.brand{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+.brand img{width:40px;height:40px}
+.brand b{font-weight:700;line-height:1.1} .brand small{display:block;color:var(--muted);font-size:.72rem}
+h2{margin:14px 0 2px;font-size:1.1rem} .sub{color:var(--muted);font-size:.84rem;margin-bottom:10px}
+label{font-size:.78rem;color:var(--muted);display:block;margin:10px 0 4px;font-weight:600}
+input{width:100%;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:9px;padding:10px 12px;font:inherit}
+.btn{width:100%;background:var(--accent);color:var(--accent-fg);border:0;border-radius:9px;padding:11px;font:inherit;font-weight:700;cursor:pointer;margin-top:14px}
+.btn.ghost{background:var(--surface-2);color:var(--muted);border:1px solid var(--line);font-weight:600}
+.err{background:var(--crit-s);color:var(--crit);border:1px solid color-mix(in srgb,var(--crit) 35%,transparent);border-radius:9px;padding:9px 11px;font-size:.82rem;margin-top:10px}
+.ok{background:var(--good-s);color:var(--good);border:1px solid color-mix(in srgb,var(--good) 30%,transparent);border-radius:9px;padding:9px 11px;font-size:.82rem;margin-top:10px}
+.hint{color:var(--muted);font-size:.76rem;margin-top:8px}
+.setup{background:var(--warn-s);color:var(--warn);border-radius:9px;padding:10px;font-size:.78rem;margin-top:10px}
+/* home */
+.home{display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center}
+.ava-lg{width:72px;height:72px;border-radius:50%;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);display:grid;place-items:center;font-size:1.3rem;font-weight:700;background-size:cover;background-position:center;overflow:hidden}
+.pill{font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:999px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.row{display:flex;gap:8px;width:100%}
+.theme-sw{position:fixed;top:12px;right:12px;display:inline-flex;gap:3px;padding:3px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.theme-sw button{border:0;background:transparent;color:var(--muted);border-radius:5px;padding:3px 8px;font:inherit;font-size:.9rem;cursor:pointer}
+.theme-sw button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+</style>
+</head>
+<body>
+<div class="theme-sw" id="theme-sw" role="group" aria-label="Theme"><button type="button" data-t="light" title="Light">☀</button><button type="button" data-t="dark" title="Dark">☾</button><button type="button" data-t="system" title="System">◐</button></div>
+<div class="wrap">
+  <div class="card">
+    <div class="brand"><img src="logo.svg" alt="LH Optimal BPO"><div><b>LH Optimal BPO</b><small>Agent portal</small></div></div>
+
+    <!-- sign in -->
+    <form id="v-login">
+      <h2>Sign in</h2>
+      <div class="sub">Use the email and one-time password from your supervisor.</div>
+      <div class="setup" id="setup-note" hidden>Supabase isn't configured in <b>lib/supabase-config.js</b>.</div>
+      <label for="lg-email">Email</label><input id="lg-email" type="email" autocomplete="username" required>
+      <label for="lg-pass">Password</label><input id="lg-pass" type="password" autocomplete="current-password" required>
+      <div class="err" id="lg-err" hidden></div>
+      <button class="btn" type="submit">Sign in</button>
+    </form>
+
+    <!-- forced first-login password change -->
+    <form id="v-change" hidden>
+      <h2>Set your password</h2>
+      <div class="sub">First login — please choose a new password.</div>
+      <label for="np1">New password</label><input id="np1" type="password" autocomplete="new-password" required>
+      <label for="np2">Confirm new password</label><input id="np2" type="password" autocomplete="new-password" required>
+      <div class="err" id="np-err" hidden></div>
+      <button class="btn" type="submit">Save new password</button>
+    </form>
+
+    <!-- signed-in home -->
+    <div id="v-home" class="home" hidden>
+      <span class="ava-lg" id="hm-ava"></span>
+      <div><div style="font-weight:700;font-size:1.05rem" id="hm-name"></div><div class="hint" id="hm-id"></div></div>
+      <span class="pill" id="hm-role">Agent</span>
+      <div class="ok" style="width:100%">You're signed in. In the installed agent app this is where your dialer and tools open.</div>
+      <div class="row">
+        <button class="btn ghost" id="hm-change" style="margin-top:0">Change password</button>
+        <button class="btn" id="hm-out" style="margin-top:0">Sign out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './lib/supabase-config.js';
+const $=(id)=>document.getElementById(id);
+$('setup-note').hidden = !SUPABASE_URL.includes('YOUR-PROJECT-REF');
+// Separate session store from the admin portal (same origin) so an admin login
+// here doesn't bleed into the agent portal and vice-versa.
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth:{ storageKey:'lh-agent-auth', persistSession:true, autoRefreshToken:true } });
+const initials=(n)=>(n||'').split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+
+/* theme */
+function applyTheme(t){ if(t==='system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme',t);
+  document.querySelectorAll('#theme-sw button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===t))); }
+(function(){ let t='system'; try{t=localStorage.getItem('lh-theme')||'system';}catch(e){} applyTheme(t);
+  document.querySelectorAll('#theme-sw button').forEach(b=>b.addEventListener('click',()=>{ try{localStorage.setItem('lh-theme',b.dataset.t);}catch(e){} applyTheme(b.dataset.t); })); })();
+
+function show(view){ ['v-login','v-change','v-home'].forEach(v=>$(v).hidden = v!==view); }
+
+async function route(){
+  const { data:{ user } } = await sb.auth.getUser();
+  if(!user){ show('v-login'); return; }
+  const md = user.user_metadata || {};
+  if(md.must_change_password){ show('v-change'); return; }
+  // home
+  const name = md.name || user.email;
+  $('hm-name').textContent = name;
+  $('hm-id').textContent = md.agent_id ? ('Agent ID: '+md.agent_id) : user.email;
+  $('hm-role').textContent = (md.role||'Agent');
+  const av=md.avatar; if(av){ $('hm-ava').style.backgroundImage=`url("${av}")`; $('hm-ava').textContent=''; } else $('hm-ava').textContent=initials(name);
+  show('v-home');
+}
+
+$('v-login').addEventListener('submit', async (e)=>{ e.preventDefault(); $('lg-err').hidden=true;
+  const { error } = await sb.auth.signInWithPassword({ email:$('lg-email').value.trim(), password:$('lg-pass').value });
+  if(error){ $('lg-err').textContent=error.message; $('lg-err').hidden=false; return; }
+  route();
+});
+
+$('v-change').addEventListener('submit', async (e)=>{ e.preventDefault(); $('np-err').hidden=true;
+  const p1=$('np1').value, p2=$('np2').value;
+  if(p1.length<8){ $('np-err').textContent='Use at least 8 characters.'; $('np-err').hidden=false; return; }
+  if(p1!==p2){ $('np-err').textContent='Passwords do not match.'; $('np-err').hidden=false; return; }
+  const { data:{ user } } = await sb.auth.getUser();
+  const md = { ...(user?.user_metadata||{}) }; delete md.must_change_password;
+  const { error } = await sb.auth.updateUser({ password:p1, data:{ ...md, must_change_password:false } });
+  if(error){ $('np-err').textContent=error.message; $('np-err').hidden=false; return; }
+  $('np1').value=''; $('np2').value=''; route();
+});
+
+$('hm-out').addEventListener('click', async ()=>{ await sb.auth.signOut(); location.reload(); });
+$('hm-change').addEventListener('click', ()=>{ show('v-change'); });
+
+route();
+</script>
+</body>
+</html>

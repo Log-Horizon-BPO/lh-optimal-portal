@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LH Optimal BPO — Wallboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --sans:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --bg:#eef1f4; --surface:#fff; --surface-2:#f5f7f9; --fg:#1b2430; --muted:#5c6775; --faint:#8793a1;
+  --line:#dce2e9; --line-soft:#e7ecf1; --track:#e4e9ef; --accent:#1f66c2; --accent-fg:#fff;
+  --good:#1f8a54; --good-s:#e2f2e9; --warn:#b2730a; --warn-s:#f7ecd8; --crit:#c23b3b; --crit-s:#f6e2e2;
+  --neutral:#596577; --neutral-s:#e9ebef; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1118; --surface:#121923; --surface-2:#0f151d; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
+  --line:#222b37; --line-soft:#1b232e; --track:#1e2733; --accent:#4f93e6; --accent-fg:#071630;
+  --good:#4ac585; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717;
+  --neutral:#9aa4b2; --neutral-s:#1d242d; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0c1118; --surface:#121923; --surface-2:#0f151d; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
+  --line:#222b37; --line-soft:#1b232e; --track:#1e2733; --accent:#4f93e6; --accent-fg:#071630;
+  --good:#4ac585; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717;
+  --neutral:#9aa4b2; --neutral-s:#1d242d; color-scheme:dark;
+}
+.theme-sw{display:inline-flex;gap:3px;padding:3px;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:8px}
+.theme-sw button{border:0;background:transparent;color:var(--muted);border-radius:5px;padding:3px 7px;font-size:.85rem;cursor:pointer;line-height:1}
+.theme-sw button:hover{background:var(--surface);color:var(--fg)}
+.theme-sw button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+*{box-sizing:border-box} html,body{margin:0} [hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.topbar{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line);padding:10px 16px}
+.topbar-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{width:32px;height:32px;flex:0 0 auto;display:block}
+.camp b{font-weight:700} .camp .s{color:var(--muted);font-size:.78rem}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted)}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--crit)}
+.pulse.on{background:var(--good)}
+.spacer{flex:1 1 auto} .clock{font-weight:600}
+.signout{border:1px solid var(--line);background:var(--surface-2);color:var(--muted);border-radius:7px;padding:5px 10px;font:inherit;font-size:.78rem;cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:11px 12px}
+.stat .k{font-size:.68rem;color:var(--muted)} .stat .v{font-family:var(--mono);font-size:1.4rem;font-weight:600;margin-top:4px}
+.stat .v small{font-size:.72rem;color:var(--faint);font-weight:500} .stat.alert .v{color:var(--crit)}
+.main{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.card-head{padding:12px 14px;border-bottom:1px solid var(--line-soft);font-size:.9rem;font-weight:600;display:flex;gap:10px;align-items:center;justify-content:space-between}
+.count{font-family:var(--mono);font-size:.72rem;color:var(--muted);background:var(--surface-2);padding:1px 7px;border-radius:5px}
+.thead,.trow{display:grid;grid-template-columns:4px 1.4fr .9fr .62fr .62fr .5fr .5fr 1fr;gap:10px;align-items:center}
+.thead{padding:9px 14px 9px 12px;border-bottom:1px solid var(--line-soft);font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:600}
+.thead .r{text-align:right}
+.trow{padding:10px 14px 10px 0;border-bottom:1px solid var(--line-soft)} .trow:last-child{border-bottom:0}
+.stripe{width:4px;align-self:stretch;border-radius:0 3px 3px 0;background:var(--sc)}
+.who .nm{font-weight:600} .who .id{font-family:var(--mono);font-size:.68rem;color:var(--faint)}
+.state{display:flex;align-items:center;gap:7px} .pill{font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:5px;background:var(--sc-s);color:var(--sc);white-space:nowrap}
+.dur{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+.num{font-family:var(--mono);text-align:right} .num.dim{color:var(--muted)}
+.bal{font-family:var(--mono);text-align:right;font-weight:600;color:var(--pc)}
+.pace{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.bar{flex:1 1 auto;max-width:92px;height:6px;border-radius:99px;background:var(--track);position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:99px;background:var(--pc);transition:width .4s ease}
+.req{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+.s-call{--sc:var(--accent);--sc-s:color-mix(in srgb,var(--accent) 14%,transparent)}
+.s-ready{--sc:var(--good);--sc-s:var(--good-s)} .s-break{--sc:var(--warn);--sc-s:var(--warn-s)}
+.s-idle{--sc:var(--crit);--sc-s:var(--crit-s)} .s-wrap{--sc:var(--neutral);--sc-s:var(--neutral-s)}
+.p-ok{--pc:var(--good)} .p-warn{--pc:var(--warn)} .p-crit{--pc:var(--crit)} .p-neutral{--pc:var(--neutral)}
+.alerts .card-head{justify-content:space-between}
+.alert{display:grid;grid-template-columns:3px 1fr;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line-soft)}
+.alert:last-child{border-bottom:0}
+.alert .sev{border-radius:99px;background:var(--ac)} .a-crit{--ac:var(--crit)} .a-warn{--ac:var(--warn)} .a-info{--ac:var(--accent)}
+.alert .am{font-size:.82rem} .alert .am b{color:var(--ac)} .alert .at{font-family:var(--mono);font-size:.66rem;color:var(--faint);margin-top:1px}
+.aempty{padding:16px 14px;color:var(--muted);font-size:.82rem}
+.foot{color:var(--muted);font-size:.76rem;margin-top:14px;display:flex;gap:8px;align-items:center}
+/* auth */
+#auth{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;padding:16px}
+.auth-card{width:330px;max-width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:9px;box-shadow:0 8px 30px rgba(20,40,70,.12)}
+.auth-card h2{margin:2px 0 2px;font-size:1.05rem}
+.auth-card label{font-size:.78rem;color:var(--muted);margin-top:4px}
+.auth-card input{border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:8px;padding:9px 11px;font:inherit}
+.auth-card button{background:var(--accent);color:var(--accent-fg);border:0;border-radius:8px;padding:10px;font:inherit;font-weight:700;cursor:pointer;margin-top:8px}
+.auth-err{background:var(--crit-s);color:var(--crit);border:1px solid color-mix(in srgb,var(--crit) 35%,transparent);border-radius:8px;padding:8px 10px;font-size:.82rem}
+.setup{background:var(--warn-s);color:var(--warn);border-radius:8px;padding:10px;font-size:.78rem;line-height:1.4}
+@media (max-width:900px){ .main{grid-template-columns:1fr} }
+@media (max-width:620px){ .thead{display:none} .trow{grid-template-columns:4px 1fr auto;row-gap:8px} .trow .num,.trow .bal{text-align:left;font-size:.8rem} .c-active,.c-break,.c-tr{display:none} }
+</style>
+</head>
+<body>
+<div id="auth">
+  <form class="auth-card" id="login-form">
+    <div style="display:flex;align-items:center;gap:10px"><img class="logo" src="logo.svg" alt="LH Optimal BPO"><div><b>LH Optimal BPO</b><div class="s" style="color:var(--muted);font-size:.72rem">Supervisor wallboard</div></div></div>
+    <h2>Sign in</h2>
+    <div class="setup" id="setup-note" hidden>Set your Supabase URL and anon key in <b>lib/supabase-config.js</b> first.</div>
+    <div class="auth-err" id="auth-err" hidden></div>
+    <label for="lg-email">Email</label><input id="lg-email" type="email" autocomplete="username" required>
+    <label for="lg-pass">Password</label><input id="lg-pass" type="password" autocomplete="current-password" required>
+    <button type="submit">Sign in</button>
+  </form>
+</div>
+
+<header class="topbar"><div class="topbar-in">
+  <a class="signout" id="back-portal" href="admin.html" style="text-decoration:none">← Admin portal</a>
+  <img class="logo" src="logo.svg" alt="LH Optimal BPO">
+  <div class="camp"><b id="camp-name">Campaign</b><div class="s" id="shiftwin">—</div></div>
+  <span class="live"><span class="pulse" id="pulse"></span><span id="conn">connecting…</span></span>
+  <div class="spacer"></div>
+  <div class="theme-sw" id="theme-sw" role="group" aria-label="Theme"><button type="button" data-t="light" title="Light">☀</button><button type="button" data-t="dark" title="Dark">☾</button><button type="button" data-t="system" title="System">◐</button></div>
+  <div style="text-align:right"><div class="clock mono" id="clock">--:--:--</div><div class="s" style="color:var(--muted);font-size:.76rem">target <span id="tgt">—</span>/hr</div></div>
+  <button class="signout" id="signout" hidden>Sign out</button>
+</div></header>
+
+<div class="wrap">
+  <section class="summary" id="summary"></section>
+  <div class="main">
+    <section class="card">
+      <div class="card-head">Agents <span class="count" id="agcount">—</span></div>
+      <div class="thead"><span></span><span>Agent</span><span>State</span><span class="r">Active</span><span class="r">Break</span><span class="r">Transf.</span><span class="r">Bal.</span><span class="r">Pace / req.</span></div>
+      <div id="tbody"></div>
+    </section>
+    <aside class="card alerts">
+      <div class="card-head">Alerts <span class="count" id="alcount">0</span></div>
+      <div id="alist"></div>
+    </aside>
+  </div>
+  <p class="foot">Live from Supabase — metrics &amp; alerts computed by <span class="mono">@mon/core</span>. Designed by <b style="color:var(--fg)">Log-Horizon</b>.</p>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, CAMPAIGN_ID } from './lib/supabase-config.js';
+import { buildSnapshot } from './lib/compute.js';
+
+const $ = (id) => document.getElementById(id);
+/* theme switcher (light/dark/system), persisted per device */
+function applyTheme(t){ if(t==='system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme',t);
+  document.querySelectorAll('#theme-sw button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===t))); }
+(function initTheme(){ let t='system'; try{ t=localStorage.getItem('lh-theme')||'system'; }catch(e){} applyTheme(t);
+  document.querySelectorAll('#theme-sw button').forEach(b=>b.addEventListener('click',()=>{ try{localStorage.setItem('lh-theme',b.dataset.t);}catch(e){} applyTheme(b.dataset.t); })); })();
+const configured = !SUPABASE_URL.includes('YOUR-PROJECT-REF');
+$('setup-note').hidden = configured;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let campaign = null, agents = [], settings = {}, eventsByAgent = {}, ids = new Set();
+
+const mapCampaign = (c) => ({ id: c.id, name: c.name, hourlyTarget: c.hourly_target, breakAllowanceMin: c.break_allowance_min, idleGraceMs: c.idle_grace_ms, shiftStart: Number(c.shift_start), shiftEnd: Number(c.shift_end) });
+const mapEvent = (e) => ({ id: e.id, agentId: e.agent_id, type: e.type, clientTs: Number(e.client_ts), serverTs: Number(e.server_ts), payload: e.payload ?? {} });
+const eventsFor = (id) => eventsByAgent[id] ?? [];
+
+async function loadAll() {
+  const [{ data: camps }, { data: ags }, { data: setRow }] = await Promise.all([
+    sb.from('campaigns_safe').select('*').eq('id', CAMPAIGN_ID),
+    sb.from('agents').select('id,name,usual_rate,campaign').eq('campaign', CAMPAIGN_ID),
+    sb.from('app_settings').select('settings').eq('id', 1).maybeSingle(),
+  ]);
+  if (!camps || !camps[0]) { setConn(false); return; }
+  campaign = mapCampaign(camps[0]);
+  agents = (ags ?? []).map((a) => ({ id: a.id, name: a.name, usualRate: Number(a.usual_rate) }));
+  settings = setRow?.settings ?? {};
+  ids = new Set(agents.map((a) => a.id));
+
+  const { data: evs } = await sb.from('events').select('*').gte('server_ts', campaign.shiftStart).order('server_ts', { ascending: true });
+  eventsByAgent = {};
+  for (const e of (evs ?? [])) if (ids.has(e.agent_id)) (eventsByAgent[e.agent_id] ??= []).push(mapEvent(e));
+  render();
+}
+
+function render() {
+  if (!campaign) return;
+  const d = buildSnapshot({ campaign, agents, eventsFor, settings, now: Date.now() });
+  $('camp-name').textContent = d.campaignName; $('tgt').textContent = d.hourlyTarget;
+  const t = d.team;
+  $('summary').innerHTML =
+    stat('Online', t.online + '<small>/' + t.count + '</small>') + stat('Active (team)', t.activeHours + '<small>h</small>') +
+    stat('Break (team)', t.breakHours + '<small>h</small>') + stat('Transfers', t.transfers + '<small>/' + t.cumulativeTarget + '</small>') +
+    stat('Projected EOD', t.projectedEOD + '<small>/' + t.shiftTarget + '</small>') + stat('Avg pace', t.avgPace + '<small>/hr</small>') +
+    stat('Behind', t.behind, t.behind > 0);
+  $('agcount').textContent = d.agents.length;
+  $('tbody').innerHTML = d.agents.map((a) => {
+    const dur = Math.floor(a.stateSinceMs / 60000) + ':' + String(Math.floor(a.stateSinceMs / 1000) % 60).padStart(2, '0');
+    return `<div class="trow s-${a.statusClass} p-${a.perf}"><span class="stripe"></span>`
+      + `<span class="who"><div class="nm">${a.name}</div><div class="id">${a.id}</div></span>`
+      + `<span class="state"><span class="pill">${a.status}</span><span class="dur">${dur}</span></span>`
+      + `<span class="num c-active">${a.activeHMS.slice(0, -3)}</span><span class="num dim c-break">${a.breakHMS}</span>`
+      + `<span class="num c-tr">${a.transfers}</span><span class="bal">${a.balanceLabel}</span>`
+      + `<span class="pace"><span class="bar"><i style="width:${a.barPct}%"></i></span><span class="req">${a.requiredPace}/hr</span></span></div>`;
+  }).join('');
+  const al = d.alerts || [];
+  $('alcount').textContent = al.length;
+  $('alist').innerHTML = al.length ? al.map((x) => {
+    const who = x.name ? x.name.split(' ').map((w, i) => i === 0 ? w[0] + '.' : w).join(' ') : '';
+    return `<div class="alert a-${x.severity}"><span class="sev"></span><div><div class="am"><b>${who}</b> ${x.message}</div><div class="at">${new Date(x.at).toTimeString().slice(0, 5)}</div></div></div>`;
+  }).join('') : '<div class="aempty">No active alerts.</div>';
+  const sw = new Date(d.shiftStart), ew = new Date(d.shiftEnd), p2 = (n) => String(n).padStart(2, '0');
+  $('shiftwin').textContent = p2(sw.getHours()) + ':' + p2(sw.getMinutes()) + '–' + p2(ew.getHours()) + ':' + p2(ew.getMinutes());
+}
+const stat = (k, v, alert) => `<div class="stat${alert ? ' alert' : ''}"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+function setConn(on) { $('pulse').classList.toggle('on', on); $('conn').textContent = on ? 'Live' : 'offline'; }
+setInterval(() => { $('clock').textContent = new Date().toTimeString().slice(0, 8); }, 1000);
+
+async function start() {
+  $('auth').hidden = true; $('signout').hidden = false;
+  await loadAll();
+  setConn(true);
+  sb.channel('events-rt').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'events' }, ({ new: e }) => {
+    if (ids.has(e.agent_id)) { (eventsByAgent[e.agent_id] ??= []).push(mapEvent(e)); }
+  }).subscribe();
+  setInterval(render, 1000); // advance timers/pace + fold in realtime inserts
+}
+
+$('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault(); $('auth-err').hidden = true;
+  const { error } = await sb.auth.signInWithPassword({ email: $('lg-email').value, password: $('lg-pass').value });
+  if (error) { $('auth-err').textContent = error.message; $('auth-err').hidden = false; } else start();
+});
+$('signout').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+
+const { data: { session } } = await sb.auth.getSession();
+if (session) start();
+</script>
+</body>
+</html>
