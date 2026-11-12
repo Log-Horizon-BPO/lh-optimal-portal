@@ -207,7 +207,13 @@ h1{font-size:1.15rem;margin:0}
       <div class="head"><h1>Support</h1></div>
       <div class="card"><div class="sup-wrap">
         <div id="sup-list"></div>
-        <div class="chatbox"><div class="card-head" id="sup-head">Select a conversation</div><div class="msgs" id="sup-msgs"></div>
+        <div class="chatbox"><div class="card-head" style="justify-content:space-between;gap:8px">
+          <span id="sup-head">Select a conversation</span>
+          <span class="sup-actions" id="sup-actions" hidden style="display:flex;gap:6px;align-items:center">
+            <span class="pill" id="sup-status"></span>
+            <button class="btn sm" id="sup-claim">Claim</button>
+            <button class="btn sm" id="sup-resolve">Resolve</button>
+          </span></div><div class="msgs" id="sup-msgs"></div>
           <div class="chat-input"><input id="sup-reply" placeholder="Type a reply…" disabled><button class="btn primary" id="sup-send" disabled>Send</button></div></div>
       </div></div>
     </section>
@@ -273,7 +279,7 @@ const esc = (s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>'
 const initials = (n)=>(n||'').split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
 let toastT; function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
 const ROLES=['Agent','Supervisor','Admin','Co-admin'];
-let ME=null, campaigns=[], agents=[], settings={}, supCurrent=null;
+let ME=null, campaigns=[], agents=[], settings={}, supCurrent=null, supTickets={};
 
 /* ---- theme switcher (light / dark / system), persisted per device ---- */
 function applyTheme(t){
@@ -323,7 +329,10 @@ async function init(){
   $('auth').hidden=true;
   setAva($('su-ava'), ME.name, ME.avatar); $('su-name').textContent=ME.name; $('su-role').textContent=ME.role;
   await loadAll();
-  sb.channel('support-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'support_messages'}, ()=>loadSupport()).subscribe();
+  sb.channel('support-rt')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'support_messages'}, ()=>loadSupport())
+    .on('postgres_changes',{event:'*',schema:'public',table:'support_tickets'}, ()=>loadSupport())
+    .subscribe();
 }
 
 async function loadAll(){
@@ -514,8 +523,17 @@ $('add-agent').addEventListener('click', async ()=>{
 });
 
 /* ---- support ---- */
+function ticketPill(t){
+  if(!t || t.status==='open') return '<span class="pill pend">Open</span>';
+  if(t.status==='resolved') return '<span class="pill ok">Resolved</span>';
+  return `<span class="pill" style="background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)">Claimed · ${esc(t.assignee_name||'?')}</span>`;
+}
 async function loadSupport(){
-  const { data:msgs } = await sb.from('support_messages').select('*').order('created_at',{ascending:true}).limit(1000);
+  const [{ data:msgs }, { data:tks }] = await Promise.all([
+    sb.from('support_messages').select('*').order('created_at',{ascending:true}).limit(1000),
+    sb.from('support_tickets').select('*'),
+  ]);
+  supTickets={}; for(const t of (tks||[])) supTickets[t.agent_id]=t;
   const byAgent={}; for(const m of (msgs||[])) (byAgent[m.agent_id] ??= []).push(m);
   const rows = Object.entries(byAgent).map(([agentId,list])=>{
     const last=list[list.length-1]; let lastAdmin=0; list.forEach(m=>{ if(m.sender==='admin') lastAdmin=Math.max(lastAdmin,+new Date(m.created_at)); });
@@ -523,8 +541,10 @@ async function loadSupport(){
     return { agentId, last, unread, name:(agents.find(a=>a.id===agentId)||{}).name||agentId };
   }).sort((a,b)=> +new Date(b.last.created_at) - +new Date(a.last.created_at));
   const u=rows.reduce((s,r)=>s+r.unread,0); $('sup-badge').hidden=u===0; $('sup-badge').textContent=u;
+  window._supByAgent=byAgent;
   $('sup-list').innerHTML = rows.length ? rows.map(r=>`<button class="sup-item" data-id="${r.agentId}" ${supCurrent===r.agentId?'aria-current="true"':''}>
-    <span class="ava">${initials(r.name)}</span><span class="mid"><div class="nm">${esc(r.name)}</div><div class="snip">${esc(r.last.body)}</div></span>${r.unread?'<span class="dot"></span>':''}</button>`).join('')
+    <span class="ava">${initials(r.name)}</span><span class="mid"><div class="nm">${esc(r.name)}</div><div class="snip">${esc(r.last.body)}</div></span>
+    <span style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">${ticketPill(supTickets[r.agentId])}${r.unread?'<span class="dot"></span>':''}</span></button>`).join('')
     : '<div class="hint" style="padding:14px">No conversations.</div>';
   document.querySelectorAll('.sup-item').forEach(b=>b.addEventListener('click',()=>openThread(b.dataset.id, byAgent[b.dataset.id])));
   if(supCurrent && byAgent[supCurrent]) openThread(supCurrent, byAgent[supCurrent]);
@@ -534,10 +554,26 @@ function openThread(agentId, list){
   document.querySelectorAll('.sup-item').forEach(b=>b.setAttribute('aria-current',String(b.dataset.id===agentId)));
   const name=(agents.find(a=>a.id===agentId)||{}).name||agentId;
   $('sup-head').textContent=name+'  ·  '+agentId;
+  const t=supTickets[agentId];
+  $('sup-actions').hidden=false; $('sup-status').outerHTML=ticketPill(t).replace('class="pill','id="sup-status" class="pill');
+  $('sup-claim').textContent = (t && t.status==='claimed' && t.assignee_id===ME.id) ? 'Claimed by you' : 'Claim';
+  $('sup-claim').disabled = !!(t && t.status==='claimed' && t.assignee_id===ME.id);
+  $('sup-resolve').textContent = (t && t.status==='resolved') ? 'Reopen' : 'Resolve';
   $('sup-msgs').innerHTML=(list||[]).map(m=>`<div class="msg ${m.sender}">${esc(m.body)}<div class="meta">${m.sender==='admin'?(m.user_name||'admin'):'agent'}</div></div>`).join('');
   const box=$('sup-msgs'); box.scrollTop=box.scrollHeight;
   $('sup-reply').disabled=false; $('sup-send').disabled=false;
 }
+async function setTicket(status){
+  if(!supCurrent) return;
+  const patch={ agent_id:supCurrent, status, updated_at:new Date().toISOString(),
+    assignee_id: status==='claimed'?ME.id:(supTickets[supCurrent]?.assignee_id??null),
+    assignee_name: status==='claimed'?ME.name:(supTickets[supCurrent]?.assignee_name??null) };
+  const { error } = await sb.from('support_tickets').upsert(patch, { onConflict:'agent_id' });
+  if(error){ toast(error.message); return; }
+  supTickets[supCurrent]=patch; loadSupport();
+}
+$('sup-claim').addEventListener('click',()=>setTicket('claimed'));
+$('sup-resolve').addEventListener('click',()=>{ const t=supTickets[supCurrent]; setTicket(t&&t.status==='resolved'?'open':'resolved'); });
 async function sendReply(){
   const text=$('sup-reply').value.trim(); if(!text||!supCurrent) return;
   $('sup-reply').value='';

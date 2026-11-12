@@ -86,6 +86,11 @@ input{width:100%;border:1px solid var(--line);background:var(--surface-2);color:
         <div id="att-state" class="hint" style="margin-bottom:10px">—</div>
         <button class="btn" id="att-btn" style="margin-top:0">Check in</button>
       </div>
+      <div style="width:100%;text-align:left;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px">
+        <div style="font-weight:600;font-size:.9rem;margin-bottom:8px">Support</div>
+        <div id="sup-msgs" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow:auto;margin-bottom:8px"></div>
+        <div style="display:flex;gap:8px"><input id="sup-input" placeholder="Message support…" style="flex:1"><button class="btn" id="sup-send" style="margin-top:0;width:auto;padding:0 16px">Send</button></div>
+      </div>
       <div class="row">
         <button class="btn ghost" id="hm-change" style="margin-top:0">Change password</button>
         <button class="btn" id="hm-out" style="margin-top:0">Sign out</button>
@@ -126,7 +131,38 @@ async function route(){
   show('v-home');
   ME_AGENT = md.agent_id || null;
   loadAttendance();
+  initSupport();
 }
+
+/* ---- support chat (agent <-> admin) ---- */
+const esc = (s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let supSubbed=false;
+async function loadSupportThread(){
+  if(!ME_AGENT) return;
+  const { data } = await sb.from('support_messages').select('sender,user_name,body,created_at')
+    .eq('agent_id',ME_AGENT).order('created_at',{ascending:true}).limit(500);
+  const box=$('sup-msgs');
+  box.innerHTML=(data||[]).map(m=>{
+    const admin=m.sender==='admin';
+    return `<div style="align-self:${admin?'flex-end':'flex-start'};max-width:82%;background:${admin?'var(--accent)':'var(--surface)'};color:${admin?'var(--accent-fg)':'var(--fg)'};border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:.84rem">${esc(m.body)}<div style="font-size:.6rem;opacity:.7;margin-top:2px">${admin?esc(m.user_name||'Support'):'You'}</div></div>`;
+  }).join('')||'<div class="hint">No messages yet. Send one to reach your supervisor.</div>';
+  box.scrollTop=box.scrollHeight;
+}
+async function sendSupport(){
+  const text=$('sup-input').value.trim(); if(!text||!ME_AGENT) return;
+  $('sup-input').value='';
+  const { error } = await sb.from('support_messages').insert({ agent_id:ME_AGENT, sender:'agent', body:text });
+  if(error){ $('sup-input').value=text; return; }
+  loadSupportThread();
+}
+function initSupport(){
+  loadSupportThread();
+  if(!supSubbed && ME_AGENT){ supSubbed=true;
+    sb.channel('sup-'+ME_AGENT).on('postgres_changes',{event:'INSERT',schema:'public',table:'support_messages',filter:'agent_id=eq.'+ME_AGENT},()=>loadSupportThread()).subscribe();
+  }
+}
+$('sup-send').addEventListener('click', sendSupport);
+$('sup-input').addEventListener('keydown',e=>{ if(e.key==='Enter') sendSupport(); });
 
 /* ---- attendance: check in / check out ---- */
 let ME_AGENT = null, attState = 'out';
