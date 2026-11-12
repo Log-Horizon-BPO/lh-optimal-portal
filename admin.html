@@ -143,6 +143,7 @@ h1{font-size:1.15rem;margin:0}
       <button data-v="attendance">Attendance</button>
       <button data-v="payroll">Payroll</button>
       <button data-v="support">Support <span id="sup-badge" class="badge" hidden>0</span></button>
+      <button data-v="team">Team chat</button>
       <button data-v="settings">Settings</button>
       <a href="wallboard.html">Wallboard ↗</a>
     </div>
@@ -215,6 +216,15 @@ h1{font-size:1.15rem;margin:0}
             <button class="btn sm" id="sup-resolve">Resolve</button>
           </span></div><div class="msgs" id="sup-msgs"></div>
           <div class="chat-input"><input id="sup-reply" placeholder="Type a reply…" disabled><button class="btn primary" id="sup-send" disabled>Send</button></div></div>
+      </div></div>
+    </section>
+
+    <section id="view-team" hidden>
+      <div class="head"><h1>Team chat</h1></div>
+      <div class="card"><div class="chatbox" style="min-height:62vh">
+        <div class="card-head">Internal team — all portal admins</div>
+        <div class="msgs" id="team-msgs"></div>
+        <div class="chat-input"><input id="team-input" placeholder="Message the team…"><button class="btn primary" id="team-send">Send</button></div>
       </div></div>
     </section>
 
@@ -583,6 +593,22 @@ async function sendReply(){
 $('sup-send').addEventListener('click',sendReply);
 $('sup-reply').addEventListener('keydown',e=>{if(e.key==='Enter')sendReply();});
 
+/* ---- internal team chat ---- */
+let teamSubbed=false;
+async function loadTeam(){
+  const { data } = await sb.from('team_messages').select('*').order('created_at',{ascending:true}).limit(1000);
+  $('team-msgs').innerHTML=(data||[]).map(m=>`<div class="msg ${m.sender_id===ME.id?'admin':'agent'}">${esc(m.body)}<div class="meta">${esc(m.sender_name||'admin')}</div></div>`).join('')||'<div class="hint" style="padding:12px">No messages yet — say hi to the team.</div>';
+  const box=$('team-msgs'); box.scrollTop=box.scrollHeight;
+  if(!teamSubbed){ teamSubbed=true; sb.channel('team-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'team_messages'},()=>{ if(!$('view-team').hidden) loadTeam(); }).subscribe(); }
+}
+async function sendTeam(){
+  const text=$('team-input').value.trim(); if(!text) return; $('team-input').value='';
+  const { error } = await sb.from('team_messages').insert({ sender_id:ME.id, sender_name:ME.name, body:text });
+  if(error) toast(error.message); else loadTeam();
+}
+$('team-send').addEventListener('click',sendTeam);
+$('team-input').addEventListener('keydown',e=>{if(e.key==='Enter')sendTeam();});
+
 /* ---- settings ---- */
 const AL=['idle','break_overrun','zero_transfers','pace','tracker_error','clock_skew'];
 async function loadSettings(){
@@ -771,11 +797,12 @@ $('pr-month').addEventListener('change', loadPayroll);
 document.querySelectorAll('.side-nav button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.side-nav button').forEach(x=>x.setAttribute('aria-current',String(x===b)));
   const v=b.dataset.v;
-  ['campaigns','agents','reports','attendance','payroll','support','settings'].forEach(k=>$('view-'+k).hidden = v!==k);
+  ['campaigns','agents','reports','attendance','payroll','support','team','settings'].forEach(k=>$('view-'+k).hidden = v!==k);
   if(v==='settings') loadSettings();
   if(v==='reports') loadReports();
   if(v==='attendance') loadAttendanceGrid();
   if(v==='payroll') loadPayroll();
+  if(v==='team') loadTeam();
 }));
 
 const { data:{ session } } = await sb.auth.getSession();

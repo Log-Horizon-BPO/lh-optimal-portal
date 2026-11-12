@@ -82,6 +82,11 @@ input{width:100%;border:1px solid var(--line);background:var(--surface-2);color:
       <span class="ava-lg" id="hm-ava"></span>
       <div><div style="font-weight:700;font-size:1.05rem" id="hm-name"></div><div class="hint" id="hm-id"></div></div>
       <span class="pill" id="hm-role">Agent</span>
+      <div style="width:100%">
+        <div class="hint" style="text-align:left;margin-bottom:6px">Today</div>
+        <div id="stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+        <div id="target-bar" style="margin-top:10px"></div>
+      </div>
       <div class="att" id="att-card" style="width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center">
         <div id="att-state" class="hint" style="margin-bottom:10px">—</div>
         <button class="btn" id="att-btn" style="margin-top:0">Check in</button>
@@ -102,6 +107,7 @@ input{width:100%;border:1px solid var(--line);background:var(--surface-2);color:
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './lib/supabase-config.js';
+import { summarizeActivity, settleShift } from './lib/core/billing.mjs';
 const $=(id)=>document.getElementById(id);
 $('setup-note').hidden = !SUPABASE_URL.includes('YOUR-PROJECT-REF');
 // Separate session store from the admin portal (same origin) so an admin login
@@ -132,6 +138,28 @@ async function route(){
   ME_AGENT = md.agent_id || null;
   loadAttendance();
   initSupport();
+  loadMyStats();
+  if(!window._statsTimer) window._statsTimer = setInterval(loadMyStats, 60000);
+}
+
+/* ---- my stats (today) ---- */
+const fmtH=(ms)=>{ const m=Math.round((ms||0)/60000); return Math.floor(m/60)+'h '+(m%60)+'m'; };
+function statTile(label,val){ return `<div style="background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center"><div style="font-weight:700;font-size:1.05rem">${val}</div><div class="hint">${label}</div></div>`; }
+async function loadMyStats(){
+  if(!ME_AGENT) return;
+  const dayStart=+new Date(new Date().toISOString().slice(0,10)+'T00:00:00'); const dayEnd=Math.min(Date.now(), dayStart+86400000);
+  const { data } = await sb.from('events').select('type,server_ts,payload').eq('agent_id',ME_AGENT).gte('server_ts',dayStart).lt('server_ts',dayEnd).limit(100000);
+  const evs=(data||[]).map(r=>({ agentId:ME_AGENT, type:r.type, serverTs:r.server_ts, payload:r.payload||{} }));
+  const s=summarizeActivity(evs,{windowStart:dayStart,windowEnd:dayEnd,idleGraceMs:180000});
+  let target=0; try{ const r=await sb.rpc('my_agent_target'); target=r.data||0; }catch(e){}
+  const paidHrs = target>0 ? settleShift({hourlyTarget:target,confirmedTransfers:s.paidTransfers,billableHoursWorked:s.dialingHours}).paidHours : null;
+  $('stats').innerHTML = statTile('Dialing',fmtH(s.dialingMs))+statTile('Break',fmtH(s.pauseMs))+statTile('Calls',s.calls)
+    + statTile('Transfers',s.paidTransfers)+statTile('Target /hr',target||'—')+statTile('Paid hrs', paidHrs===null?'—':paidHrs);
+  if(target>0){
+    const needed=Math.round(target*s.dialingHours); const pct=needed>0?Math.min(100,Math.round(s.paidTransfers/needed*100)):0;
+    $('target-bar').innerHTML=`<div class="hint" style="text-align:left;margin-bottom:4px">Target progress — <b>${s.paidTransfers}/${needed}</b> transfers for ${fmtH(s.dialingMs)} dialed (${pct}%)</div>`+
+      `<div style="height:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--accent)"></div></div>`;
+  } else $('target-bar').innerHTML='';
 }
 
 /* ---- support chat (agent <-> admin) ---- */
