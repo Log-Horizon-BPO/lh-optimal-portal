@@ -82,7 +82,10 @@ input{width:100%;border:1px solid var(--line);background:var(--surface-2);color:
       <span class="ava-lg" id="hm-ava"></span>
       <div><div style="font-weight:700;font-size:1.05rem" id="hm-name"></div><div class="hint" id="hm-id"></div></div>
       <span class="pill" id="hm-role">Agent</span>
-      <div class="ok" style="width:100%">You're signed in. In the installed agent app this is where your dialer and tools open.</div>
+      <div class="att" id="att-card" style="width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center">
+        <div id="att-state" class="hint" style="margin-bottom:10px">—</div>
+        <button class="btn" id="att-btn" style="margin-top:0">Check in</button>
+      </div>
       <div class="row">
         <button class="btn ghost" id="hm-change" style="margin-top:0">Change password</button>
         <button class="btn" id="hm-out" style="margin-top:0">Sign out</button>
@@ -121,7 +124,34 @@ async function route(){
   $('hm-role').textContent = (md.role||'Agent');
   const av=md.avatar; if(av){ $('hm-ava').style.backgroundImage=`url("${av}")`; $('hm-ava').textContent=''; } else $('hm-ava').textContent=initials(name);
   show('v-home');
+  ME_AGENT = md.agent_id || null;
+  loadAttendance();
 }
+
+/* ---- attendance: check in / check out ---- */
+let ME_AGENT = null, attState = 'out';
+const hhmm = (d)=> new Date(d).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+async function loadAttendance(){
+  if(!ME_AGENT){ $('att-card').hidden = true; return; }
+  $('att-card').hidden = false;
+  const todayStart = +new Date(new Date().toISOString().slice(0,10)+'T00:00:00');
+  const { data } = await sb.from('attendance').select('type,ts')
+    .eq('agent_id', ME_AGENT).gte('ts', new Date(todayStart).toISOString())
+    .order('ts', { ascending:false }).limit(1);
+  const last = data && data[0];
+  attState = (last && last.type==='check_in') ? 'in' : 'out';
+  if(attState==='in'){ $('att-state').innerHTML = '🟢 Checked in at <b>'+hhmm(last.ts)+'</b>'; $('att-btn').textContent='Check out'; $('att-btn').classList.remove('ghost'); }
+  else { $('att-state').textContent = last ? ('Last checked out at '+hhmm(last.ts)) : 'Not checked in today'; $('att-btn').textContent='Check in'; }
+}
+$('att-btn').addEventListener('click', async ()=>{
+  if(!ME_AGENT) return;
+  const type = attState==='in' ? 'check_out' : 'check_in';
+  $('att-btn').disabled = true;
+  const { error } = await sb.from('attendance').insert({ agent_id: ME_AGENT, type });
+  $('att-btn').disabled = false;
+  if(error){ $('att-state').textContent = error.message; return; }
+  loadAttendance();
+});
 
 $('v-login').addEventListener('submit', async (e)=>{ e.preventDefault(); $('lg-err').hidden=true;
   const { error } = await sb.auth.signInWithPassword({ email:$('lg-email').value.trim(), password:$('lg-pass').value });

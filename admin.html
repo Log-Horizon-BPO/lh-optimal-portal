@@ -84,7 +84,16 @@ h1{font-size:1.15rem;margin:0}
 .dispo-tags{display:flex;gap:4px;flex-wrap:wrap;white-space:normal;max-width:340px}
 .dispo-tags span{font-family:var(--mono);font-size:.68rem;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:5px;padding:1px 6px}
 .rp-controls{display:flex;align-items:center;gap:10px}
-.rp-controls input[type=date]{border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:8px;padding:7px 10px;font:inherit}
+.rp-controls input[type=date],.rp-controls input[type=month]{border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:8px;padding:7px 10px;font:inherit}
+.att-grid{border-collapse:collapse;font-size:.72rem}
+.att-grid th,.att-grid td{border:1px solid var(--line-soft);padding:0;text-align:center}
+.att-grid th.day{width:22px;height:24px;color:var(--faint);font-weight:600}
+.att-grid td.cell{width:22px;height:22px} .att-grid td.cell[title]{cursor:default}
+.att-grid th.name,.att-grid td.name{padding:6px 10px;text-align:left;white-space:nowrap;font-weight:600;position:sticky;left:0;background:var(--surface);z-index:1}
+.att-grid td.tot{padding:4px 10px;font-family:var(--mono);text-align:right;white-space:nowrap}
+.c-dialed{background:var(--good)} .c-att{background:var(--warn)} .c-absent{background:var(--surface-2)}
+.att-legend{display:flex;gap:16px;align-items:center;font-size:.76rem;margin-bottom:10px;flex-wrap:wrap}
+.att-legend .sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:5px;border:1px solid var(--line-soft)}
 .sup-wrap{display:grid;grid-template-columns:300px 1fr;gap:14px;align-items:start}
 .sup-item{display:flex;gap:10px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line-soft);cursor:pointer;width:100%;background:transparent;border-left:0;border-right:0;border-top:0;color:var(--fg);text-align:left}
 .sup-item:hover{background:var(--surface-2)} .sup-item[aria-current="true"]{background:color-mix(in srgb,var(--accent) 10%,transparent)}
@@ -131,6 +140,8 @@ h1{font-size:1.15rem;margin:0}
       <button data-v="campaigns" aria-current="true">Campaigns</button>
       <button data-v="agents">Agents</button>
       <button data-v="reports">Reports</button>
+      <button data-v="attendance">Attendance</button>
+      <button data-v="payroll">Payroll</button>
       <button data-v="support">Support <span id="sup-badge" class="badge" hidden>0</span></button>
       <button data-v="settings">Settings</button>
       <a href="wallboard.html">Wallboard ↗</a>
@@ -170,6 +181,26 @@ h1{font-size:1.15rem;margin:0}
       <div class="hint" style="margin:-6px 0 12px">Dialing &amp; break time and paid transfers for the selected day. Paid hours are attributed to the <b>dialer user</b> (the dialing seat), not the system login.</div>
       <div class="card"><div class="card-head"><b>By agent (system user)</b></div><div style="overflow-x:auto"><table class="rpt" id="rp-agents"></table></div></div>
       <div class="card"><div class="card-head"><b>By dialer user</b></div><div style="overflow-x:auto"><table class="rpt" id="rp-dialers"></table></div></div>
+    </section>
+
+    <section id="view-attendance" hidden>
+      <div class="head"><h1>Attendance</h1><div class="spacer"></div>
+        <div class="rp-controls"><label class="hint">Month</label><input id="at-month" type="month"><button class="btn" id="at-refresh">Refresh</button></div>
+      </div>
+      <div class="att-legend">
+        <span><span class="sw c-dialed"></span>Attended &amp; dialed</span>
+        <span><span class="sw c-att"></span>Attended, didn't dial</span>
+        <span><span class="sw c-absent"></span>Absent / no login</span>
+      </div>
+      <div class="card"><div style="overflow-x:auto"><table class="att-grid" id="at-grid"></table></div></div>
+    </section>
+
+    <section id="view-payroll" hidden>
+      <div class="head"><h1>Payroll</h1><div class="spacer"></div>
+        <div class="rp-controls"><label class="hint">Month</label><input id="pr-month" type="month"><button class="btn" id="pr-refresh">Refresh</button></div>
+      </div>
+      <div class="hint" style="margin:-6px 0 12px">Paid working hours follow the campaign target (e.g. target 2/hr over 8 dialing hrs ⇒ 16 needed; 12 transfers ⇒ 6 paid hrs). Salary = paid hours × pay rate (set per agent).</div>
+      <div class="card"><div style="overflow-x:auto"><table class="rpt" id="pr-table"></table></div></div>
     </section>
 
     <section id="view-support" hidden>
@@ -385,6 +416,7 @@ function renderAgents(){
         <div class="field"><label>Role</label><select data-e="role">${roleOpts}</select></div>
         <div class="field"><label>Status</label><select data-e="status"><option ${a.status==='Active'?'selected':''}>Active</option><option ${a.status==='Paused'?'selected':''}>Paused</option><option ${a.status==='Disabled'?'selected':''}>Disabled</option></select></div>
         <div class="field"><label>Usual pace /hr</label><input data-e="usual_rate" type="number" step="0.1" value="${a.usual_rate??2}"></div>
+        <div class="field"><label>Pay rate /hr</label><input data-e="pay_rate" type="number" step="0.01" value="${a.pay_rate??0}"></div>
         <div class="field"><label>Dialer login</label><input data-e="dialer_user" autocomplete="off" value="${esc(a.dialer_user||'')}"></div>
         <div class="field"><label>Dialer password</label><input data-e="dialer_pass" type="password" autocomplete="new-password" placeholder="${a.dialer_pass?'•••••• (set — type to change)':'not set'}"></div>
       </div>
@@ -446,7 +478,7 @@ function renderAgents(){
 async function onSaveAgent(e){
   const box=e.target.closest('[data-ed]'), id=box.dataset.ed, q=f=>box.querySelector(`[data-e="${f}"]`);
   const patch={ name:q('name').value.trim(), campaign:q('campaign').value||null, role:q('role').value,
-    status:q('status').value, usual_rate:+q('usual_rate').value||2, dialer_user:q('dialer_user').value.trim()||null };
+    status:q('status').value, usual_rate:+q('usual_rate').value||2, pay_rate:+q('pay_rate').value||0, dialer_user:q('dialer_user').value.trim()||null };
   const dp=q('dialer_pass').value; if(dp) patch.dialer_pass=dp;   // only overwrite when typed
   const { error } = await sb.from('agents').update(patch).eq('id',id);
   toast(error?error.message:'Agent saved'); if(!error){ agentOpen=null; loadAll(); }
@@ -632,13 +664,82 @@ $('rp-date').value = new Date().toISOString().slice(0,10);
 $('rp-refresh').addEventListener('click', loadReports);
 $('rp-date').addEventListener('change', loadReports);
 
+/* ---- attendance + payroll (monthly) ---- */
+function monthBounds(ym){ const [y,m]=ym.split('-').map(Number); const start=new Date(y,m-1,1), end=new Date(y,m,1);
+  return { start:+start, end:+end, days:Math.round((+end-+start)/86400000) }; }
+async function monthlyData(ym){
+  const { start, end, days } = monthBounds(ym);
+  const [{data:ev},{data:att}] = await Promise.all([
+    sb.from('events').select('agent_id,type,server_ts,payload').gte('server_ts',start).lt('server_ts',end).limit(200000),
+    sb.from('attendance').select('agent_id,type,ts').gte('ts',new Date(start).toISOString()).lt('ts',new Date(end).toISOString()).limit(50000),
+  ]);
+  const idx=(ts)=>Math.floor((ts-start)/86400000);
+  const evByAD={}, ciByAD={};
+  for(const e of (ev||[])){ const d=idx(e.server_ts); if(d<0||d>=days) continue; (evByAD[e.agent_id] ??= {}); (evByAD[e.agent_id][d] ??= []).push({agentId:e.agent_id,type:e.type,serverTs:e.server_ts,payload:e.payload||{}}); }
+  for(const a of (att||[])){ if(a.type!=='check_in') continue; const d=idx(+new Date(a.ts)); if(d<0||d>=days) continue; (ciByAD[a.agent_id] ??= new Set()).add(d); }
+  const grace=(settings.alerts?.idleMin??5)*60000;
+  const rows=agents.map(a=>{
+    const tgt=targetFor(a.campaign); const cells=[]; let attendedDays=0, dialedDays=0, paidHours=0, dialingHours=0, transfers=0;
+    for(let d=0; d<days; d++){
+      const ds=start+d*86400000, de=Math.min(Date.now(), ds+86400000);
+      const evs=evByAD[a.id]?.[d]||[]; const hasCi=ciByAD[a.id]?.has(d);
+      const s=evs.length?summarizeActivity(evs,{windowStart:ds,windowEnd:de,idleGraceMs:grace}):null;
+      const dialed=!!(s&&s.dialingMs>0);
+      const status=dialed?'dialed':(hasCi?'att':'absent');
+      cells.push({status, dialingMs:s?.dialingMs||0, paidTransfers:s?.paidTransfers||0});
+      if(status!=='absent') attendedDays++; if(dialed) dialedDays++;
+      if(s){ dialingHours+=s.dialingHours; transfers+=s.paidTransfers;
+        paidHours += tgt>0?settleShift({hourlyTarget:tgt,confirmedTransfers:s.paidTransfers,billableHoursWorked:s.dialingHours}).paidHours:0; }
+    }
+    return { agent:a, tgt, cells, attendedDays, dialedDays, paidHours, dialingHours, transfers };
+  });
+  return { rows, days };
+}
+async function loadAttendanceGrid(){
+  const ym=$('at-month').value||new Date().toISOString().slice(0,7); $('at-month').value=ym;
+  const { rows, days } = await monthlyData(ym);
+  let head='<tr><th class="name">Agent</th>';
+  for(let d=0; d<days; d++) head+='<th class="day">'+(d+1)+'</th>';
+  head+='<th class="day" style="width:auto;padding:0 6px">Att</th><th class="day" style="width:auto;padding:0 6px">Dial</th><th class="day" style="width:auto;padding:0 6px">Paid hrs</th></tr>';
+  const body=rows.map(r=>{
+    let tds='';
+    for(const c of r.cells){ const cls=c.status==='dialed'?'c-dialed':c.status==='att'?'c-att':'c-absent';
+      const t=c.status==='dialed'?('Dialed '+fmtDur(c.dialingMs)+' · '+c.paidTransfers+' xfer'):c.status==='att'?'Attended, no dialing':'';
+      tds+=`<td class="cell ${cls}"${t?` title="${esc(t)}"`:''}></td>`; }
+    return `<tr><td class="name">${esc(r.agent.name)}<div class="sub2">${r.agent.id}</div></td>${tds}`+
+      `<td class="tot">${r.attendedDays}</td><td class="tot">${r.dialedDays}</td><td class="tot">${r.paidHours}</td></tr>`;
+  }).join('')||'<tr><td class="hint" style="padding:14px">No agents yet.</td></tr>';
+  $('at-grid').innerHTML=head+body;
+}
+async function loadPayroll(){
+  const ym=$('pr-month').value||new Date().toISOString().slice(0,7); $('pr-month').value=ym;
+  const { rows } = await monthlyData(ym);
+  const head='<tr><th>Agent</th><th>Attended days</th><th>Dialing hrs</th><th>Paid transfers</th><th>Paid hrs</th><th>Pay rate</th><th>Salary</th></tr>';
+  let totalSalary=0;
+  const body=rows.map(r=>{ const rate=+r.agent.pay_rate||0, salary=r.paidHours*rate; totalSalary+=salary;
+    return `<tr><td><div class="who">${esc(r.agent.name)}</div><div class="sub2">${r.agent.id}</div></td>`+
+      `<td class="num">${r.attendedDays}</td><td class="num">${r.dialingHours.toFixed(1)}</td><td class="num">${r.transfers}</td>`+
+      `<td class="num">${r.paidHours}</td><td class="num">${rate?rate.toFixed(2):'—'}</td><td class="num">${rate?salary.toFixed(2):'—'}</td></tr>`;
+  }).join('')||'<tr><td colspan="7" class="hint" style="padding:14px">No agents yet.</td></tr>';
+  const foot=`<tr><td style="font-weight:700">Total</td><td colspan="5"></td><td class="num" style="font-weight:700">${totalSalary.toFixed(2)}</td></tr>`;
+  $('pr-table').innerHTML=head+body+foot;
+}
+$('at-month').value=new Date().toISOString().slice(0,7);
+$('pr-month').value=new Date().toISOString().slice(0,7);
+$('at-refresh').addEventListener('click', loadAttendanceGrid);
+$('at-month').addEventListener('change', loadAttendanceGrid);
+$('pr-refresh').addEventListener('click', loadPayroll);
+$('pr-month').addEventListener('change', loadPayroll);
+
 /* ---- nav ---- */
 document.querySelectorAll('.side-nav button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.side-nav button').forEach(x=>x.setAttribute('aria-current',String(x===b)));
   const v=b.dataset.v;
-  ['campaigns','agents','reports','support','settings'].forEach(k=>$('view-'+k).hidden = v!==k);
+  ['campaigns','agents','reports','attendance','payroll','support','settings'].forEach(k=>$('view-'+k).hidden = v!==k);
   if(v==='settings') loadSettings();
   if(v==='reports') loadReports();
+  if(v==='attendance') loadAttendanceGrid();
+  if(v==='payroll') loadPayroll();
 }));
 
 const { data:{ session } } = await sb.auth.getSession();
