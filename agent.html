@@ -4,25 +4,25 @@
 <meta charset="utf-8">
 <link rel="icon" type="image/svg+xml" href="logo.svg">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LH Optimal BPO — Agent</title>
+<title>Optimal Agent — Agent</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
 :root{
   --sans:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
   --bg:#eef1f4; --surface:#fff; --surface-2:#f5f7f9; --fg:#1b2430; --muted:#5c6775; --faint:#8793a1;
-  --line:#dce2e9; --line-soft:#e7ecf1; --accent:#1f66c2; --accent-fg:#fff;
-  --good:#1f8a54; --good-s:#e2f2e9; --warn:#b2730a; --warn-s:#f7ecd8; --crit:#c23b3b; --crit-s:#f6e2e2;
+  --line:#dce2e9; --line-soft:#e7ecf1; --accent:#2f5bea; --accent-fg:#fff;
+  --good:#1a9d50; --good-s:#e2f2e9; --warn:#b2730a; --warn-s:#f7ecd8; --crit:#c23b3b; --crit-s:#f6e2e2;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0c1118; --surface:#121923; --surface-2:#0f151d; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
-  --line:#222b37; --line-soft:#1b232e; --accent:#4f93e6; --accent-fg:#071630;
-  --good:#4ac585; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717; color-scheme:dark;
+  --bg:#0b1f3a; --surface:#0f2847; --surface-2:#0d2140; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
+  --line:#1e3a5f; --line-soft:#17304f; --accent:#5f82f2; --accent-fg:#071630;
+  --good:#2ecb6b; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717; color-scheme:dark;
 }}
 :root[data-theme="dark"]{
-  --bg:#0c1118; --surface:#121923; --surface-2:#0f151d; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
-  --line:#222b37; --line-soft:#1b232e; --accent:#4f93e6; --accent-fg:#071630;
-  --good:#4ac585; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717; color-scheme:dark;
+  --bg:#0b1f3a; --surface:#0f2847; --surface-2:#0d2140; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
+  --line:#1e3a5f; --line-soft:#17304f; --accent:#5f82f2; --accent-fg:#071630;
+  --good:#2ecb6b; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717; color-scheme:dark;
 }
 *{box-sizing:border-box} html,body{margin:0;min-height:100%} [hidden]{display:none!important}
 body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px}
@@ -54,7 +54,7 @@ input{width:100%;border:1px solid var(--line);background:var(--surface-2);color:
 <div class="theme-sw" id="theme-sw" role="group" aria-label="Theme"><button type="button" data-t="light" title="Light">☀</button><button type="button" data-t="dark" title="Dark">☾</button><button type="button" data-t="system" title="System">◐</button></div>
 <div class="wrap">
   <div class="card">
-    <div class="brand"><img src="logo.svg" alt="LH Optimal BPO"><div><b>LH Optimal BPO</b><small>Agent portal</small></div></div>
+    <div class="brand"><img src="logo.svg" alt="Optimal Agent"><div><b>Optimal Agent</b><small>Agent portal</small></div></div>
 
     <!-- sign in -->
     <form id="v-login">
@@ -65,6 +65,7 @@ input{width:100%;border:1px solid var(--line);background:var(--surface-2);color:
       <label for="lg-pass">Password</label><input id="lg-pass" type="password" autocomplete="current-password" required>
       <div class="err" id="lg-err" hidden></div>
       <button class="btn" type="submit">Sign in</button>
+      <div class="hint" style="text-align:center;margin-top:12px;font-size:.68rem">Powered By Log-Horizon BS, 2026 All Rights Reserved</div>
     </form>
 
     <!-- forced first-login password change -->

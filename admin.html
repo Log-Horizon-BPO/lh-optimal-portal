@@ -4,26 +4,26 @@
 <link rel="icon" type="image/svg+xml" href="logo.svg">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LH Optimal BPO — Admin</title>
+<title>Optimal Agent — Admin</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
 :root{
   --sans:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
   --bg:#eef1f4; --surface:#fff; --surface-2:#f5f7f9; --fg:#1b2430; --muted:#5c6775; --faint:#8793a1;
-  --line:#dce2e9; --line-soft:#e7ecf1; --accent:#1f66c2; --accent-fg:#fff;
-  --good:#1f8a54; --good-s:#e2f2e9; --warn:#b2730a; --warn-s:#f7ecd8; --crit:#c23b3b; --crit-s:#f6e2e2;
+  --line:#dce2e9; --line-soft:#e7ecf1; --accent:#2f5bea; --accent-fg:#fff;
+  --good:#1a9d50; --good-s:#e2f2e9; --warn:#b2730a; --warn-s:#f7ecd8; --crit:#c23b3b; --crit-s:#f6e2e2;
   --neutral:#596577; --neutral-s:#e9ebef; color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0c1118; --surface:#121923; --surface-2:#0f151d; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
-  --line:#222b37; --line-soft:#1b232e; --accent:#4f93e6; --accent-fg:#071630;
-  --good:#4ac585; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717;
+  --bg:#0b1f3a; --surface:#0f2847; --surface-2:#0d2140; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
+  --line:#1e3a5f; --line-soft:#17304f; --accent:#5f82f2; --accent-fg:#071630;
+  --good:#2ecb6b; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717;
   --neutral:#9aa4b2; --neutral-s:#1d242d; color-scheme:dark;
 }}
 :root[data-theme="dark"]{
-  --bg:#0c1118; --surface:#121923; --surface-2:#0f151d; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
-  --line:#222b37; --line-soft:#1b232e; --accent:#4f93e6; --accent-fg:#071630;
-  --good:#4ac585; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717;
+  --bg:#0b1f3a; --surface:#0f2847; --surface-2:#0d2140; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
+  --line:#1e3a5f; --line-soft:#17304f; --accent:#5f82f2; --accent-fg:#071630;
+  --good:#2ecb6b; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717;
   --neutral:#9aa4b2; --neutral-s:#1d242d; color-scheme:dark;
 }
 *{box-sizing:border-box} html,body{margin:0;min-height:100%} [hidden]{display:none!important}
@@ -71,6 +71,9 @@ h1{font-size:1.15rem;margin:0}
 .pill{font-size:.68rem;font-weight:600;padding:2px 9px;border-radius:999px;display:inline-block}
 .ok{color:var(--good);background:var(--good-s)} .off{color:var(--neutral);background:var(--neutral-s)} .pend{color:var(--warn);background:var(--warn-s)}
 .acts{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.pres{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+.pres-online{background:#22c55e;box-shadow:0 0 0 3px color-mix(in srgb,#22c55e 22%,transparent)}
+.pres-break{background:#e0a33a} .pres-offline{background:var(--neutral)}
 .role-sel{border:1px solid var(--line);background:var(--surface-2);color:var(--fg);border-radius:6px;padding:4px 6px;font-size:.76rem}
 .recips{display:flex;flex-direction:column;gap:1px;border:1px solid var(--line-soft);border-radius:8px;padding:6px;background:var(--surface-2);max-height:240px;overflow:auto}
 .recips label{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:.84rem}
@@ -123,19 +126,20 @@ h1{font-size:1.15rem;margin:0}
 <body>
 <div id="auth">
   <form class="auth-card" id="login-form">
-    <div style="display:flex;align-items:center;gap:10px"><img class="logo" src="logo.svg" alt="LH Optimal BPO"><div><b>LH Optimal BPO</b><div class="hint">Admin portal</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><img class="logo" src="logo.svg" alt="Optimal Agent"><div><b>Optimal Agent</b><div class="hint">Admin portal</div></div></div>
     <h2>Sign in</h2>
     <div class="setup" id="setup-note" hidden>Set your Supabase URL and anon key in <b>lib/supabase-config.js</b> first.</div>
     <div class="auth-err" id="auth-err" hidden></div>
     <label for="lg-email">Email</label><input id="lg-email" type="email" autocomplete="username" required>
     <label for="lg-pass">Password</label><input id="lg-pass" type="password" autocomplete="current-password" required>
     <button type="submit">Sign in</button>
+    <div class="hint" style="text-align:center;margin-top:12px;font-size:.68rem">Powered By Log-Horizon BS, 2026 All Rights Reserved</div>
   </form>
 </div>
 
 <div class="ashell">
   <nav class="sidebar">
-    <div class="side-brand"><img class="logo" src="logo.svg" alt="LH Optimal BPO"><div><b>LH Optimal BPO</b><small>Admin portal</small></div></div>
+    <div class="side-brand"><img class="logo" src="logo.svg" alt="Optimal Agent"><div><b>Optimal Agent</b><small>Admin portal</small></div></div>
     <div class="side-nav">
       <button data-v="campaigns" aria-current="true">Campaigns</button>
       <button data-v="agents">Agents</button>
@@ -345,16 +349,29 @@ async function init(){
     .subscribe();
 }
 
+let presence={};
+function agentPresence(id){
+  const p=presence[id];
+  if(!p || Date.now()-p.lastTs > 120000) return 'offline';   // no signal in 2 min
+  if(p.status==='PAUSED') return 'break';
+  if(p.status==='OFFLINE') return 'offline';
+  return 'online';
+}
 async function loadAll(){
-  const [{data:c},{data:a},{data:s}] = await Promise.all([
+  const since = Date.now() - 10*60000;
+  const [{data:c},{data:a},{data:s},{data:ev}] = await Promise.all([
     sb.from('campaigns_safe').select('*'),
     sb.from('agents').select('*'),
     sb.from('app_settings').select('settings').eq('id',1).maybeSingle(),
+    sb.from('events').select('agent_id,type,server_ts,payload').gte('server_ts',since).order('server_ts',{ascending:true}).limit(50000),
   ]);
   campaigns=c||[]; agents=a||[]; settings=s?.settings??{};
+  presence={}; for(const e of (ev||[])){ const p=presence[e.agent_id] ??= {lastTs:0,status:null}; if(e.server_ts>p.lastTs) p.lastTs=e.server_ts; if(e.type==='status_change') p.status=e.payload?.to; }
   renderCampaigns(); renderAgents(); fillAgentForm(); loadSupport();
   if(!$('view-settings').hidden) loadSettings();
 }
+// keep presence fresh while the Agents tab is open
+setInterval(()=>{ if(ME && !$('view-agents').hidden) loadAll(); }, 45000);
 
 /* ---- campaigns ---- */
 function renderCampaigns(){
@@ -451,7 +468,8 @@ function renderAgents(){
       </div>
       <div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary save-e">Save changes</button><button class="btn close-e">Close</button><div class="spacer"></div><button class="btn danger del-a">Delete agent</button></div>
     </div>` : '';
-    return `<div class="row" data-id="${a.id}"><span><div class="nm">${esc(a.name)}</div><div class="sub">${a.id}${a.dialer_user?' · dialer:'+esc(a.dialer_user):' · no dialer login'}</div></span>
+    const pres=agentPresence(a.id); const presLbl={online:'Online',break:'On break',offline:'Offline'}[pres];
+    return `<div class="row" data-id="${a.id}"><span style="display:flex;align-items:center;gap:9px"><span class="pres pres-${pres}" title="${presLbl}"></span><span><div class="nm">${esc(a.name)}</div><div class="sub">${a.id}${a.dialer_user?' · dialer:'+esc(a.dialer_user):' · no dialer login'}</div></span></span>
       <span>${esc(camp)}</span><span><span class="pill ${a.status==='Active'?'ok':a.status==='Paused'?'pend':'off'}">${esc(a.status)}</span></span>
       <span><select class="role-sel">${roleOpts}</select></span>
       <span class="acts"><button class="btn sm details">${open?'Hide':'Details'}</button>

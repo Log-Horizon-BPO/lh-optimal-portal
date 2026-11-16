@@ -4,26 +4,26 @@
 <link rel="icon" type="image/svg+xml" href="logo.svg">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LH Optimal BPO — Wallboard</title>
+<title>Optimal Agent — Wallboard</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
 :root{
   --sans:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
   --bg:#eef1f4; --surface:#fff; --surface-2:#f5f7f9; --fg:#1b2430; --muted:#5c6775; --faint:#8793a1;
-  --line:#dce2e9; --line-soft:#e7ecf1; --track:#e4e9ef; --accent:#1f66c2; --accent-fg:#fff;
-  --good:#1f8a54; --good-s:#e2f2e9; --warn:#b2730a; --warn-s:#f7ecd8; --crit:#c23b3b; --crit-s:#f6e2e2;
+  --line:#dce2e9; --line-soft:#e7ecf1; --track:#e4e9ef; --accent:#2f5bea; --accent-fg:#fff;
+  --good:#1a9d50; --good-s:#e2f2e9; --warn:#b2730a; --warn-s:#f7ecd8; --crit:#c23b3b; --crit-s:#f6e2e2;
   --neutral:#596577; --neutral-s:#e9ebef; color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0c1118; --surface:#121923; --surface-2:#0f151d; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
-  --line:#222b37; --line-soft:#1b232e; --track:#1e2733; --accent:#4f93e6; --accent-fg:#071630;
-  --good:#4ac585; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717;
+  --bg:#0b1f3a; --surface:#0f2847; --surface-2:#0d2140; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
+  --line:#1e3a5f; --line-soft:#17304f; --track:#1e2733; --accent:#5f82f2; --accent-fg:#071630;
+  --good:#2ecb6b; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717;
   --neutral:#9aa4b2; --neutral-s:#1d242d; color-scheme:dark;
 }}
 :root[data-theme="dark"]{
-  --bg:#0c1118; --surface:#121923; --surface-2:#0f151d; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
-  --line:#222b37; --line-soft:#1b232e; --track:#1e2733; --accent:#4f93e6; --accent-fg:#071630;
-  --good:#4ac585; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717;
+  --bg:#0b1f3a; --surface:#0f2847; --surface-2:#0d2140; --fg:#e6edf5; --muted:#8a97a6; --faint:#5e6b7a;
+  --line:#1e3a5f; --line-soft:#17304f; --track:#1e2733; --accent:#5f82f2; --accent-fg:#071630;
+  --good:#2ecb6b; --good-s:#123221; --warn:#e0a33a; --warn-s:#352711; --crit:#f0736f; --crit-s:#371717;
   --neutral:#9aa4b2; --neutral-s:#1d242d; color-scheme:dark;
 }
 .theme-sw{display:inline-flex;gap:3px;padding:3px;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:8px}
@@ -92,19 +92,20 @@ body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px
 <body>
 <div id="auth">
   <form class="auth-card" id="login-form">
-    <div style="display:flex;align-items:center;gap:10px"><img class="logo" src="logo.svg" alt="LH Optimal BPO"><div><b>LH Optimal BPO</b><div class="s" style="color:var(--muted);font-size:.72rem">Supervisor wallboard</div></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><img class="logo" src="logo.svg" alt="Optimal Agent"><div><b>Optimal Agent</b><div class="s" style="color:var(--muted);font-size:.72rem">Supervisor wallboard</div></div></div>
     <h2>Sign in</h2>
     <div class="setup" id="setup-note" hidden>Set your Supabase URL and anon key in <b>lib/supabase-config.js</b> first.</div>
     <div class="auth-err" id="auth-err" hidden></div>
     <label for="lg-email">Email</label><input id="lg-email" type="email" autocomplete="username" required>
     <label for="lg-pass">Password</label><input id="lg-pass" type="password" autocomplete="current-password" required>
     <button type="submit">Sign in</button>
+    <div class="hint" style="text-align:center;margin-top:12px;font-size:.68rem">Powered By Log-Horizon BS, 2026 All Rights Reserved</div>
   </form>
 </div>
 
 <header class="topbar"><div class="topbar-in">
   <a class="signout" id="back-portal" href="admin.html" style="text-decoration:none">← Admin portal</a>
-  <img class="logo" src="logo.svg" alt="LH Optimal BPO">
+  <img class="logo" src="logo.svg" alt="Optimal Agent">
   <div class="camp"><b id="camp-name">Campaign</b><div class="s" id="shiftwin">—</div></div>
   <span class="live"><span class="pulse" id="pulse"></span><span id="conn">connecting…</span></span>
   <div class="spacer"></div>
@@ -126,7 +127,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px
       <div id="alist"></div>
     </aside>
   </div>
-  <p class="foot">Live from Supabase — metrics &amp; alerts computed by <span class="mono">@mon/core</span>. Designed by <b style="color:var(--fg)">Log-Horizon</b>.</p>
+  <p class="foot">Live from Supabase — metrics &amp; alerts computed by <span class="mono">@mon/core</span>. <b style="color:var(--fg)">Powered By Log-Horizon BS</b>, 2026.</p>
 </div>
 
 <script type="module">
