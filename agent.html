@@ -149,7 +149,9 @@ function statTile(label,val){ return `<div style="background:var(--surface-2);bo
 async function loadMyStats(){
   if(!ME_AGENT) return;
   const dayStart=+new Date(new Date().toISOString().slice(0,10)+'T00:00:00'); const dayEnd=Math.min(Date.now(), dayStart+86400000);
-  const { data } = await sb.from('events').select('type,server_ts,payload').eq('agent_id',ME_AGENT).gte('server_ts',dayStart).lt('server_ts',dayEnd).limit(100000);
+  const { data } = await sb.from('events').select('type,server_ts,payload').eq('agent_id',ME_AGENT)
+    .in('type',['status_change','transfer_confirmed','disposition','idle_start','idle_end'])
+    .gte('server_ts',dayStart).lt('server_ts',dayEnd).limit(100000);
   const evs=(data||[]).map(r=>({ agentId:ME_AGENT, type:r.type, serverTs:r.server_ts, payload:r.payload||{} }));
   const s=summarizeActivity(evs,{windowStart:dayStart,windowEnd:dayEnd,idleGraceMs:180000});
   let target=0; try{ const r=await sb.rpc('my_agent_target'); target=r.data||0; }catch(e){}

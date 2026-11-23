@@ -79,6 +79,8 @@ h1{font-size:1.15rem;margin:0}
 .recips label{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:.84rem}
 .recips .rl{margin-left:auto;font-family:var(--mono);font-size:.68rem;color:var(--faint)}
 .hint{color:var(--muted);font-size:.74rem}
+@keyframes shimmer{100%{background-position:-200% 0}}
+.skel{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--surface-2) 25%,var(--line-soft) 37%,var(--surface-2) 63%);background-size:200% 100%;animation:shimmer 1.2s infinite}
 .rpt{width:100%;border-collapse:collapse;font-size:.82rem}
 .rpt th,.rpt td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line-soft);white-space:nowrap;vertical-align:top}
 .rpt th{font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:600}
@@ -186,6 +188,7 @@ h1{font-size:1.15rem;margin:0}
       <div class="hint" style="margin:-6px 0 12px">Dialing &amp; break time and paid transfers for the selected day. Paid hours are attributed to the <b>dialer user</b> (the dialing seat), not the system login.</div>
       <div class="card"><div class="card-head"><b>By agent (system user)</b></div><div style="overflow-x:auto"><table class="rpt" id="rp-agents"></table></div></div>
       <div class="card"><div class="card-head"><b>By dialer user</b></div><div style="overflow-x:auto"><table class="rpt" id="rp-dialers"></table></div></div>
+      <div class="card"><div class="card-head"><b>Calls</b><div class="spacer"></div><span class="hint" id="rp-calls-count"></span></div><div style="overflow-x:auto;max-height:420px"><table class="rpt" id="rp-calls"></table></div></div>
     </section>
 
     <section id="view-attendance" hidden>
@@ -293,6 +296,8 @@ const esc = (s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>'
 const initials = (n)=>(n||'').split(/\s+/).map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
 let toastT; function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
 const ROLES=['Agent','Supervisor','Admin','Co-admin'];
+// Event types the reports/compute actually need — excludes high-volume heartbeats.
+const REPORT_TYPES=['status_change','transfer_confirmed','disposition','idle_start','idle_end'];
 let ME=null, campaigns=[], agents=[], settings={}, supCurrent=null, supTickets={};
 
 /* ---- theme switcher (light / dark / system), persisted per device ---- */
@@ -322,7 +327,10 @@ function fileToAvatar(file){
     const img=new Image(); const rd=new FileReader();
     rd.onload=()=>{ img.onload=()=>{ const S=128, c=document.createElement('canvas'); c.width=c.height=S;
       const ctx=c.getContext('2d'); const m=Math.min(img.width,img.height), sx=(img.width-m)/2, sy=(img.height-m)/2;
-      ctx.drawImage(img,sx,sy,m,m,0,0,S,S); res(c.toDataURL('image/jpeg',0.82)); };
+      ctx.drawImage(img,sx,sy,m,m,0,0,S,S);
+      // Prefer webp (smaller); fall back to jpeg if the browser can't encode it.
+      let out=c.toDataURL('image/webp',0.8); if(!out.startsWith('data:image/webp')) out=c.toDataURL('image/jpeg',0.82);
+      res(out); };
       img.onerror=rej; img.src=rd.result; };
     rd.onerror=rej; rd.readAsDataURL(file);
   });
@@ -358,15 +366,14 @@ function agentPresence(id){
   return 'online';
 }
 async function loadAll(){
-  const since = Date.now() - 10*60000;
-  const [{data:c},{data:a},{data:s},{data:ev}] = await Promise.all([
+  const [{data:c},{data:a},{data:s},{data:pres}] = await Promise.all([
     sb.from('campaigns_safe').select('*'),
     sb.from('agents').select('*'),
     sb.from('app_settings').select('settings').eq('id',1).maybeSingle(),
-    sb.from('events').select('agent_id,type,server_ts,payload').gte('server_ts',since).order('server_ts',{ascending:true}).limit(50000),
+    sb.rpc('agent_presence'),   // tiny server-side summary, not raw events
   ]);
   campaigns=c||[]; agents=a||[]; settings=s?.settings??{};
-  presence={}; for(const e of (ev||[])){ const p=presence[e.agent_id] ??= {lastTs:0,status:null}; if(e.server_ts>p.lastTs) p.lastTs=e.server_ts; if(e.type==='status_change') p.status=e.payload?.to; }
+  presence={}; for(const r of (pres||[])) presence[r.agent_id]={ lastTs:r.last_ts, status:r.last_status };
   renderCampaigns(); renderAgents(); fillAgentForm(); loadSupport();
   if(!$('view-settings').hidden) loadSettings();
 }
@@ -700,14 +707,17 @@ $('add-user').addEventListener('click', async ()=>{
 });
 
 /* ---- reports ---- */
+function skelRows(id, cols=5, rows=6){ const el=$(id); if(!el) return; el.innerHTML=Array.from({length:rows}).map(()=>'<tr>'+Array.from({length:cols}).map(()=>'<td style="padding:11px 12px"><div class="skel"></div></td>').join('')+'</tr>').join(''); }
 function fmtDur(ms){ const m=Math.round((ms||0)/60000); const h=Math.floor(m/60); return (h?h+'h ':'')+(m%60)+'m'; }
 function dayWindow(dateStr){ const s=+new Date(dateStr+'T00:00:00'); return { windowStart:s, windowEnd:Math.min(Date.now(), s+86400000) }; }
 function targetFor(campaignId){ return (campaigns.find(c=>c.id===campaignId)||{}).hourly_target||0; }
 async function loadReports(){
   const dateStr = $('rp-date').value || new Date().toISOString().slice(0,10);
   $('rp-date').value = dateStr;
+  skelRows('rp-agents',7); skelRows('rp-dialers',6); skelRows('rp-calls',5);
   const { windowStart, windowEnd } = dayWindow(dateStr);
   const { data:rows } = await sb.from('events').select('agent_id,type,server_ts,payload')
+    .in('type', REPORT_TYPES)   // skip heartbeats — the bulk of the volume
     .gte('server_ts', windowStart).lt('server_ts', windowEnd).limit(100000);
   const evAll = (rows||[]).map(r=>({ agentId:r.agent_id, type:r.type, serverTs:r.server_ts, payload:r.payload||{} }));
   const opts = { windowStart, windowEnd, idleGraceMs:(settings.alerts?.idleMin??5)*60000 };
@@ -739,6 +749,20 @@ async function loadReports(){
       `<td class="num">${s.paidTransfers}</td><td class="num">${tgt>0?paid:'—'}</td><td>${used}</td></tr>`;
   }).join('')||'<tr><td colspan="6" class="hint" style="padding:14px">No dialer activity for this day. (Agents tag events with their dialer user once they start working.)</td></tr>';
   $('rp-dialers').innerHTML=dHead+dBody;
+
+  // Calls — every dispositioned call: time, agent, phone number, disposition.
+  const calls=evAll.filter(e=>e.type==='disposition').sort((a,b)=>b.serverTs-a.serverTs);
+  const CAP=300; const shown=calls.slice(0,CAP);   // cap DOM rows to stay snappy
+  const hhmm=(ts)=>new Date(ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  const cHead='<tr><th>Time</th><th>Agent</th><th>Phone number</th><th>Disposition</th><th>Dialer user</th></tr>';
+  const cBody=shown.map(e=>{
+    const a=agents.find(x=>x.id===e.agentId)||{}; const p=e.payload||{};
+    return `<tr><td class="num">${hhmm(e.serverTs)}</td><td>${esc(a.name||e.agentId)}</td>`+
+      `<td class="num">${esc(p.phone||'—')}</td><td><span class="dispo-tags"><span>${esc(p.code||'—')}</span></span></td>`+
+      `<td class="sub2">${esc(p.dialerUser||'—')}</td></tr>`;
+  }).join('')||'<tr><td colspan="5" class="hint" style="padding:14px">No calls dispositioned this day.</td></tr>';
+  $('rp-calls').innerHTML=cHead+cBody;
+  $('rp-calls-count').textContent = calls.length ? (calls.length+' calls'+(calls.length>CAP?' · showing latest '+CAP:'')) : '';
 }
 $('rp-date').value = new Date().toISOString().slice(0,10);
 $('rp-refresh').addEventListener('click', loadReports);
@@ -750,7 +774,7 @@ function monthBounds(ym){ const [y,m]=ym.split('-').map(Number); const start=new
 async function monthlyData(ym){
   const { start, end, days } = monthBounds(ym);
   const [{data:ev},{data:att}] = await Promise.all([
-    sb.from('events').select('agent_id,type,server_ts,payload').gte('server_ts',start).lt('server_ts',end).limit(200000),
+    sb.from('events').select('agent_id,type,server_ts,payload').in('type', REPORT_TYPES).gte('server_ts',start).lt('server_ts',end).limit(200000),
     sb.from('attendance').select('agent_id,type,ts').gte('ts',new Date(start).toISOString()).lt('ts',new Date(end).toISOString()).limit(50000),
   ]);
   const idx=(ts)=>Math.floor((ts-start)/86400000);
@@ -777,6 +801,7 @@ async function monthlyData(ym){
 }
 async function loadAttendanceGrid(){
   const ym=$('at-month').value||new Date().toISOString().slice(0,7); $('at-month').value=ym;
+  skelRows('at-grid',8);
   const { rows, days } = await monthlyData(ym);
   let head='<tr><th class="name">Agent</th>';
   for(let d=0; d<days; d++) head+='<th class="day">'+(d+1)+'</th>';
@@ -793,6 +818,7 @@ async function loadAttendanceGrid(){
 }
 async function loadPayroll(){
   const ym=$('pr-month').value||new Date().toISOString().slice(0,7); $('pr-month').value=ym;
+  skelRows('pr-table',7);
   const { rows } = await monthlyData(ym);
   const head='<tr><th>Agent</th><th>Attended days</th><th>Dialing hrs</th><th>Paid transfers</th><th>Paid hrs</th><th>Pay rate</th><th>Salary</th></tr>';
   let totalSalary=0;
