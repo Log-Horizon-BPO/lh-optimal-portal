@@ -410,7 +410,7 @@ function renderCampaigns(){
       <div class="card-pad"><div class="grid">
         <div class="field"><label>Name</label><input data-f="name" value="${esc(c.name)}"></div>
         <div class="field"><label>Status</label><select data-f="status"><option ${c.status!=='Paused'?'selected':''}>Active</option><option ${c.status==='Paused'?'selected':''}>Paused</option></select></div>
-        <div class="field"><label>Target /hr</label><input data-f="hourly_target" type="number" step="any" min="0" value="${c.hourly_target}"></div>
+        <div class="field"><label>Target /hr</label><input data-f="hourly_target" type="text" inputmode="decimal" placeholder="e.g. 1.5" value="${c.hourly_target}"></div>
         <div class="field"><label>Break allowance (min)</label><input data-f="break_allowance_min" type="number" value="${c.break_allowance_min}"></div>
         <div class="field"><label>Idle grace (min)</label><input data-f="idle_grace_min" type="number" value="${Math.round((c.idle_grace_ms||180000)/60000)}"></div>
         <div class="field"><label>Working hours — start</label><input data-f="work_start" type="time" value="${esc(c.work_start||'')}"></div>
@@ -429,7 +429,9 @@ function renderCampaigns(){
 }
 async function onSaveCamp(e){
   const card=e.target.closest('[data-id]'), id=card.dataset.id, q=f=>card.querySelector(`[data-f="${f}"]`);
-  const patch={ name:q('name').value, status:q('status').value, hourly_target:+q('hourly_target').value,
+  const ht=parseFloat(String(q('hourly_target').value).replace(',','.'));
+  if(!isFinite(ht)||ht<0){ toast('Target must be a number ≥ 0 (e.g. 1.5)'); return; }
+  const patch={ name:q('name').value, status:q('status').value, hourly_target:ht,
     break_allowance_min:+q('break_allowance_min').value, idle_grace_ms:+q('idle_grace_min').value*60000,
     work_start:q('work_start').value||null, work_end:q('work_end').value||null };
   const du=q('dialer_url'); if(du) patch.dialer_url=du.value;
