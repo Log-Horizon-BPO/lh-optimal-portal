@@ -173,7 +173,7 @@ h1{font-size:1.15rem;margin:0}
         <div class="field"><label>Role</label><select id="na-role"></select></div>
         <div class="field"><label>Usual pace /hr</label><input id="na-rate" type="number" step="0.1" value="2.0"></div>
         <div class="field"><label>User email (login)</label><input id="na-email" type="email" autocomplete="off" placeholder="agent@…"></div>
-        <div class="field"><label>One-time password <span class="hint" style="font-weight:400">(agent changes on 1st login)</span></label><div style="display:flex;gap:6px"><input id="na-otp" autocomplete="off"><button type="button" class="btn sm" id="na-gen" title="Generate">⟳</button></div></div>
+        <div class="field"><label>One-time password <span class="hint" style="font-weight:400">(changes on 1st login)</span></label><div style="display:flex;gap:6px"><input id="na-otp" autocomplete="off" style="flex:1 1 auto;min-width:0"><button type="button" class="btn sm" id="na-gen" title="Generate" style="flex:0 0 auto">⟳</button></div></div>
         <div class="field"><label>Dialer login</label><input id="na-duser" autocomplete="off"></div>
         <div class="field"><label>Dialer password</label><input id="na-dpass" type="password" autocomplete="new-password"></div>
         <div class="field" style="justify-content:flex-end"><button class="btn primary" id="add-agent">Create agent</button></div>
@@ -378,7 +378,17 @@ async function loadAll(){
   if(!$('view-settings').hidden) loadSettings();
 }
 // keep presence fresh while the Agents tab is open
-setInterval(()=>{ if(ME && !$('view-agents').hidden) loadAll(); }, 45000);
+// Auto-refresh the active view every 4s. Skipped while the admin is typing/
+// selecting or has an agent's Details panel open, so it never disrupts an edit.
+function userBusy(){ const a=document.activeElement; return a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName); }
+function refreshActive(){
+  if(!ME || userBusy()) return;
+  if(!$('view-agents').hidden || !$('view-campaigns').hidden){ if(!agentOpen) loadAll(); }
+  else if(!$('view-reports').hidden) loadReports(true);
+  else if(!$('view-attendance').hidden) loadAttendanceGrid(true);
+  else if(!$('view-payroll').hidden) loadPayroll(true);
+}
+setInterval(refreshActive, 4000);
 
 /* ---- campaigns ---- */
 function renderCampaigns(){
@@ -400,7 +410,7 @@ function renderCampaigns(){
       <div class="card-pad"><div class="grid">
         <div class="field"><label>Name</label><input data-f="name" value="${esc(c.name)}"></div>
         <div class="field"><label>Status</label><select data-f="status"><option ${c.status!=='Paused'?'selected':''}>Active</option><option ${c.status==='Paused'?'selected':''}>Paused</option></select></div>
-        <div class="field"><label>Target /hr</label><input data-f="hourly_target" type="number" value="${c.hourly_target}"></div>
+        <div class="field"><label>Target /hr</label><input data-f="hourly_target" type="number" step="any" min="0" value="${c.hourly_target}"></div>
         <div class="field"><label>Break allowance (min)</label><input data-f="break_allowance_min" type="number" value="${c.break_allowance_min}"></div>
         <div class="field"><label>Idle grace (min)</label><input data-f="idle_grace_min" type="number" value="${Math.round((c.idle_grace_ms||180000)/60000)}"></div>
         <div class="field"><label>Working hours — start</label><input data-f="work_start" type="time" value="${esc(c.work_start||'')}"></div>
@@ -711,10 +721,10 @@ function skelRows(id, cols=5, rows=6){ const el=$(id); if(!el) return; el.innerH
 function fmtDur(ms){ const m=Math.round((ms||0)/60000); const h=Math.floor(m/60); return (h?h+'h ':'')+(m%60)+'m'; }
 function dayWindow(dateStr){ const s=+new Date(dateStr+'T00:00:00'); return { windowStart:s, windowEnd:Math.min(Date.now(), s+86400000) }; }
 function targetFor(campaignId){ return (campaigns.find(c=>c.id===campaignId)||{}).hourly_target||0; }
-async function loadReports(){
+async function loadReports(silent){
   const dateStr = $('rp-date').value || new Date().toISOString().slice(0,10);
   $('rp-date').value = dateStr;
-  skelRows('rp-agents',7); skelRows('rp-dialers',6); skelRows('rp-calls',5);
+  if(!silent){ skelRows('rp-agents',7); skelRows('rp-dialers',6); skelRows('rp-calls',5); }
   const { windowStart, windowEnd } = dayWindow(dateStr);
   const { data:rows } = await sb.from('events').select('agent_id,type,server_ts,payload')
     .in('type', REPORT_TYPES)   // skip heartbeats — the bulk of the volume
@@ -799,9 +809,9 @@ async function monthlyData(ym){
   });
   return { rows, days };
 }
-async function loadAttendanceGrid(){
+async function loadAttendanceGrid(silent){
   const ym=$('at-month').value||new Date().toISOString().slice(0,7); $('at-month').value=ym;
-  skelRows('at-grid',8);
+  if(!silent) skelRows('at-grid',8);
   const { rows, days } = await monthlyData(ym);
   let head='<tr><th class="name">Agent</th>';
   for(let d=0; d<days; d++) head+='<th class="day">'+(d+1)+'</th>';
@@ -816,9 +826,9 @@ async function loadAttendanceGrid(){
   }).join('')||'<tr><td class="hint" style="padding:14px">No agents yet.</td></tr>';
   $('at-grid').innerHTML=head+body;
 }
-async function loadPayroll(){
+async function loadPayroll(silent){
   const ym=$('pr-month').value||new Date().toISOString().slice(0,7); $('pr-month').value=ym;
-  skelRows('pr-table',7);
+  if(!silent) skelRows('pr-table',7);
   const { rows } = await monthlyData(ym);
   const head='<tr><th>Agent</th><th>Attended days</th><th>Dialing hrs</th><th>Paid transfers</th><th>Paid hrs</th><th>Pay rate</th><th>Salary</th></tr>';
   let totalSalary=0;
